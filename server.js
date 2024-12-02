@@ -8,10 +8,10 @@ const server = createServer(app);
 const io = new Server(server);
 
 app.get("/", (req, res) => {
-  res.sendFile(join(__dirname, "controller.html"));
+  res.sendFile(join(__dirname, "/controllers/controller.html"));
 });
 app.get("/game", (req, res) => {
-  res.sendFile(join(__dirname, "index.html"));
+  res.sendFile(join(__dirname, "/games/index.html"));
 });
 
 io.on("connection", (socket) => {
