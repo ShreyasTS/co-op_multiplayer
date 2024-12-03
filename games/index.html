@@ -19,6 +19,11 @@
         overflow: hidden;
       }
 
+      .flex_spaceBetween {
+        display: flex;
+        justify-content: space-between;
+      }
+
       body {
         display: flex;
         flex-direction: row;
@@ -29,42 +34,38 @@
         -webkit-overflow-scrolling: touch;
         height: 100vh;
       }
-
-      #testA,
-      #testB {
-        width: 300px;
-        height: 300px;
-        background-color: black;
-        margin: 20px;
-        font-size: xx-large;
-      }
-      #holder {
-        display: flex;
-        flex-direction: row;
-      }
     </style>
   </head>
   <body>
-    <div>
-      <div id="holder">
-        <div id="testA">A</div>
-        <div id="testB">B</div>
+    <form id="newPlayerAction">
+      <div class="flex_spaceBetween" style="padding: 20px; border: 1px solid black; border-radius: 10px">
+        <label for="createGame">Create Game:</label> <button id="createGame">CREATE</button>
       </div>
-    </div>
+      <div class="flex_spaceBetween" style="margin: 20px; padding: 20px; border: 1px solid black; border-radius: 10px">
+        <label for="playerName">Name: </label> <input id="playerName" type="text" />
+        <button>JOIN</button>
+      </div>
+    </form>
   </body>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    const socket = io();
-    let testA = document.getElementById("testA");
-    let testB = document.getElementById("testB");
-    socket.on("userInputReciever", (data) => {
-      if (data == "A") {
-        testA.style.backgroundColor = "green";
-        testB.style.backgroundColor = "red";
-      } else {
-        testB.style.backgroundColor = "green";
-        testA.style.backgroundColor = "red";
-      }
+    let newPlayerAction = document.getElementById("newPlayerAction");
+    newPlayerAction.addEventListener("submit", (e) => {
+      e.preventDefault();
+      fetch("http://localhost:3000/", { method: "post" }).then(() => {
+        console.log("DONE");
+      });
     });
+
+    // const socket = io();
+    // document.addEventListener("DOMContentLoaded", () => {
+    //   if ("vibrate" in navigator) {
+    //     document.getElementById("log").innerHTML = "YES API";
+    //     navigator.vibrate(2000);
+    //   } else {
+    //     document.getElementById("log").innerHTML = "NO API";
+    //     console.log("Vibration API is not supported on this device.");
+    //   }
+    // });
   </script>
 </html>
