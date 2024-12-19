@@ -52,9 +52,14 @@
       </div>
     </div>
   </body>
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/viewer/socket.io.js"></script>
   <script>
-    const socket = io();
+    const socket = io("/viewer");
+
+    socket.on("confirm", (data) => {
+      console.log(data);
+    });
+
     let testA = document.getElementById("testA");
     let testB = document.getElementById("testB");
     socket.on("userInputReciever", (data) => {

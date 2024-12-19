@@ -11,7 +11,6 @@
         margin: 0;
         width: 100%;
         height: 100%;
-        border: 4px solid black;
       }
 
       * {
@@ -35,7 +34,7 @@
       }
 
       #buttonHolder {
-        display: flex;
+        display: none;
         flex-direction: row;
         justify-content: space-between;
         align-items: center;
@@ -55,38 +54,296 @@
       #singleTapButtonB {
         background-color: rgb(0, 60, 255);
       }
+
+      .flex_spaceBetween {
+        display: flex;
+        justify-content: space-between;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .flex_spaceBetween * {
+        margin: 10px;
+      }
+
+      #joinHolder,
+      #createHolder {
+        display: none;
+      }
+
+      .createJoinBtns {
+        width: 100px;
+        border: 2px solid grey;
+        padding: 10px;
+        font-size: large;
+      }
+
+      #controllerContentHolder {
+        position: fixed;
+        top: 0;
+        left: 0;
+        background-color: white;
+        /* opacity: 0.8; */
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        width: 100%;
+        height: 100%;
+        border: 2px solid black;
+      }
+      #statusBar {
+        padding: 10px;
+        position: relative;
+        display: none;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        top: 0;
+        border: 2px solid black;
+        height: 8%;
+        width: 100%;
+        background-color: white;
+      }
+
+      #controller {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+      }
+      #connectivityStatus {
+        align-self: flex-end;
+        margin-right: 20px;
+        padding: 5px;
+      }
+      #gameidStatusbarDisplay {
+        align-self: flex-start;
+        /* position: absolute;
+        top: 0;
+        left: 0; */
+      }
+      #notificationsStatusbar {
+        align-self: center;
+      }
     </style>
   </head>
   <body>
-    <button onclick="fullscreenMode()">hehe</button>
-    <div id="buttonHolder">
-      <button class="singleTapBtn" id="singleTapButtonA">
-        <span style="font-size: xx-large; color: black">A</span>
+    <!--  -->
+    <div id="controllerContentHolder">
+      <div
+        style="
+          display: flex;
+          flex-direction: row;
+          margin: 20px;
+          gap: 10px;
+          border: 3px dashed grey;
+          padding: 20px;
+          border-radius: 10px;
+          background-color: white;
+        "
+      >
+        <button id="createBtn" class="createJoinBtns" onclick="showCreate()">Create</button>
+        <button id="joinBtn" class="createJoinBtns" onclick="showJoin()">Join</button>
+      </div>
+      <div
+        id="createHolder"
+        class="flex_spaceBetween"
+        style="padding: 20px; border: 1px solid black; border-radius: 10px"
+      >
+        <label for="playerName_create">Name:</label>
+        <input type="text" autocomplete="off" name="playerName_create" id="playerName_create" />
+        <span id="gameid"></span><button onclick="createGame()" id="createGame">CREATE</button>
+      </div>
+      <div
+        id="joinHolder"
+        class="flex_spaceBetween"
+        style="margin: 20px; padding: 20px; border: 1px solid black; border-radius: 10px"
+      >
+        <label for="joinGameId">GameID: </label> <input required autocomplete="off" id="joinGameId" type="text" />
+        <label for="playerName">Name: </label> <input required autocomplete="off" id="playerName" type="text" />
+        <p style="color: red" id="errDisplay"></p>
+        <button onclick="joinGame()">JOIN</button>
+      </div>
+    </div>
+
+    <!--  -->
+
+    <div id="controller">
+      <div id="statusBar">
+        <div style="display: flex; flex-direction: column">
+          <span id="gameidStatusbarDisplay">GameID: </span> <span id="playerNameStatusbar">Name: </span>
+        </div>
+        <span id="notificationsStatusbar">:Notifications:</span>
+        <span id="connectivityStatus">Disonnected 🔴</span>
+      </div>
+      <button
+        id="fullScreenBtn"
+        style="position: fixed; top: 50%; right: 50%; width: 100px; padding: 10px"
+        onclick="fullscreenMode()"
+      >
+        FullScreen
       </button>
-      <button class="singleTapBtn" id="singleTapButtonB">
-        <span style="font-size: xx-large; color: white">B</span>
-      </button>
+      <div id="buttonHolder">
+        <button class="singleTapBtn" id="singleTapButtonA">
+          <span style="font-size: xx-large; color: black">A</span>
+        </button>
+        <button class="singleTapBtn" id="singleTapButtonB">
+          <span style="font-size: xx-large; color: white">B</span>
+        </button>
+      </div>
     </div>
   </body>
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="/gameController/socket.io.js"></script>
 
   <script>
-    const socket = io();
-    function fullscreenMode() {
-      let buttonHolder = document.getElementById("buttonHolder");
-      buttonHolder.requestFullscreen();
-      screen.orientation.lock("landscape-primary");
+    //
+    const socket = io({ autoConnect: false, path: "/gameController" });
+
+    let controllerContentHolder = document.getElementById("controllerContentHolder");
+    let newPlayerAction = document.getElementById("newPlayerAction");
+    let gameid = document.getElementById("gameid");
+    let joinGameId = document.getElementById("joinGameId");
+    let playerName = document.getElementById("playerName");
+    let playerName_create = document.getElementById("playerName_create");
+    let createHolder = document.getElementById("createHolder");
+    let joinHolder = document.getElementById("joinHolder");
+    let controller = document.getElementById("controller");
+    let connectivityStatus = document.getElementById("connectivityStatus");
+    let fullScreenBtn = document.getElementById("fullScreenBtn");
+    let statusBar = document.getElementById("statusBar");
+    let gameidStatusbarDisplay = document.getElementById("gameidStatusbarDisplay");
+    let notificationsStatusbar = document.getElementById("notificationsStatusbar");
+    let errDisplay = document.getElementById("errDisplay");
+
+    let controllerContent = ``;
+    let playerInputEmitterName = "";
+
+    let isFullscreenMode = false;
+
+    socket.on("playerjoined", (data) => {
+      console.log(data);
+    });
+
+    socket.on("confirm", (data) => {
+      console.log(data);
+    });
+
+    function showCreate() {
+      createHolder.style.display = "flex";
+      joinHolder.style.display = "none";
+      socket.connect();
+      document.getElementById("joinBtn").disabled = true;
+      document.getElementById("createBtn").disabled = true;
     }
-    // document.addEventListener("DOMContentLoaded", () => {});
+    function showJoin() {
+      createHolder.style.display = "none";
+      joinHolder.style.display = "flex";
+      socket.connect();
+      document.getElementById("joinBtn").disabled = true;
+      document.getElementById("createBtn").disabled = true;
+    }
+
+    function createGame() {
+      socket.emit("assignName", { name: playerName_create.value }, (data) => {
+        gameid.innerHTML = `<span>GAME CODE:<span style="font-weight: bold; border: 2px solid black; padding: 5px; border-radius: 10px" >${data.gameid}</span></span>`;
+        controllerContentHolder.style.display = "none";
+        gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${data.gameid}</strong>`;
+        playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
+        playerInputEmitterName = playerName_create.value;
+      });
+      fullscreenMode();
+    }
+
+    function joinGame() {
+      console.log({ gameid: gameid.value, playername: playerName.value });
+      socket.emit("joinLobby", { gameid: joinGameId.value, playername: playerName.value }, (response) => {
+        console.log(response);
+        if (response.status == "OK") {
+          console.log("YOU'RE IN!");
+          gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${joinGameId.value}</strong>`;
+          playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
+          playerInputEmitterName = playerName.value;
+          fullscreenMode();
+        } else {
+          console.log("WRONG GAME ID!");
+          errDisplay.innerHTML = "Invalid Game ID";
+          setTimeout(() => {
+            errDisplay.innerHTML = "";
+          }, 3000);
+        }
+      });
+    }
+
+    document.addEventListener("fullscreenchange", () => {
+      console.log("CHANGED!");
+      if (document.fullscreenElement) {
+        fullScreenBtn.style.display = "none";
+        buttonHolder.style.display = "flex";
+        statusBar.style.display = "flex";
+      } else {
+        fullScreenBtn.style.display = "block";
+        statusBar.style.display = "none";
+        buttonHolder.style.display = "none";
+      }
+    });
+
+    //
+    function fullscreenMode() {
+      if (!document.fullscreenElement) {
+        buttonHolder.style.display = "flex";
+        statusBar.style.display = "flex";
+        controller.requestFullscreen();
+        screen.orientation.lock("landscape-primary");
+      } else {
+        buttonHolder.style.display = "none";
+        controller.exitFullscreen();
+        screen.orientation.lock("portrait-primary");
+      }
+    }
+    // document.addEventListener("DOMContentLoaded", () => {
+    //   socket.connect("/gameController");
+    // });
 
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
 
+    socket.on("connect", () => {
+      console.log("CONN");
+      connectivityStatus.innerHTML = "Connected 🟢";
+      connectivityStatus.style.border = "2px solid green";
+      connectivityStatus.style.borderRadius = "10px";
+    });
+
+    socket.on("playerjoined", (data) => {
+      if ("vibrate" in navigator) {
+        navigator.vibrate(100);
+      }
+      notificationsStatusbar.innerHTML = `${data}`;
+      setTimeout(() => {
+        notificationsStatusbar.innerHTML = `:Notifications:`;
+      }, 3000);
+    });
+
+    socket.on("err", (data) => {
+      console.log(data);
+      errDisplay.innerHTML = data.errCode;
+    });
+
+    socket.on("disconnect", () => {
+      console.log("DIS CONN");
+      connectivityStatus.innerHTML = "Disconnected 🔴";
+      connectivityStatus.style.border = "2px solid red";
+      connectivityStatus.style.borderRadius = "10px";
+    });
+
     singleTapButtonA.addEventListener("click", () => {
-      socket.emit("userInput", "A");
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A" });
     });
     singleTapButtonB.addEventListener("click", () => {
-      socket.emit("userInput", "B");
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B" });
     });
   </script>
 </html>
