@@ -54,6 +54,10 @@
       #singleTapButtonB {
         background-color: rgb(0, 60, 255);
       }
+      #singleTapButtonCenter {
+        background-color: rgb(246, 255, 0);
+        width: 70%;
+      }
 
       .flex_spaceBetween {
         display: flex;
@@ -188,10 +192,13 @@
       </button>
       <div id="buttonHolder">
         <button class="singleTapBtn" id="singleTapButtonA">
-          <span style="font-size: xx-large; color: black">A</span>
+          <span style="font-size: xx-large; color: black; user-select: none">A</span>
+        </button>
+        <button class="singleTapBtn" id="singleTapButtonCenter">
+          <span style="font-size: xx-large; color: black; user-select: none">SHOOT</span>
         </button>
         <button class="singleTapBtn" id="singleTapButtonB">
-          <span style="font-size: xx-large; color: white">B</span>
+          <span style="font-size: xx-large; color: white; user-select: none">B</span>
         </button>
       </div>
     </div>
@@ -309,6 +316,7 @@
 
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
+    const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
 
     socket.on("connect", () => {
       console.log("CONN");
@@ -339,11 +347,31 @@
       connectivityStatus.style.borderRadius = "10px";
     });
 
-    singleTapButtonA.addEventListener("click", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A" });
+    singleTapButtonA.addEventListener("touchstart", () => {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
     });
-    singleTapButtonB.addEventListener("click", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B" });
+    singleTapButtonB.addEventListener("touchstart", () => {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+    });
+    singleTapButtonCenter.addEventListener("click", () => {
+      if ("vibrate" in navigator) {
+        navigator.vibrate(50);
+      }
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
+    });
+
+    singleTapButtonA.addEventListener("touchmove", () => {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+    });
+    singleTapButtonB.addEventListener("touchmove", () => {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+    });
+
+    singleTapButtonA.addEventListener("touchend", () => {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+    });
+    singleTapButtonB.addEventListener("touchend", () => {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
     });
   </script>
 </html>

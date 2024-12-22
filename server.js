@@ -49,6 +49,7 @@ io.on("connection", (socket) => {
     lobbies.push(newLobby);
     console.log(lobbies);
     socket.join(lobbyid);
+    io.to(gameViewerSocket.id).emit("playerjoined", data.name);
     cb({ gameid: lobbyid });
   });
 
@@ -70,6 +71,8 @@ io.on("connection", (socket) => {
       socket.join(data.gameid);
       cb({ status: "OK" });
       socket.to(data.gameid).emit("playerjoined", `New Player joined! ${data.playername}`);
+      console.log(gameViewerSocket.id);
+      io.to(gameViewerSocket.id).emit("playerjoined", data.playername);
       console.log("2>", lobbies);
     }
   });
