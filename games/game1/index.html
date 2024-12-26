@@ -11,6 +11,9 @@
       }
 
       * {
+        border: 0;
+        padding: 0;
+        margin: 0;
         outline: none;
         font-family: Arial, Helvetica, sans-serif;
       }
@@ -49,7 +52,12 @@
   <body>
     <div>
       <p id="playerInputs"></p>
-      <canvas id="gameCanvas" width="800" height="600"></canvas>
+      <!-- <canvas id="gameCanvas" width="800" height="600"></canvas> -->
+      <canvas id="gameCanvas" width="1920" height="1080"></canvas>
+      <img id="spaceshipImg" style="display: none" src="/game1/assets/spaceship.png" alt="" />
+      <img id="spacebgImg" style="display: none" src="/game1/assets/spacebg.jpg" alt="" />
+      <img id="enemyshipImg" style="display: none" src="/game1/assets/enemyship.png" alt="" />
+      <img id="boomImg" style="display: none" src="/game1/assets/boom1.png" alt="" />
     </div>
   </body>
   <!-- <script src="/viewer/socket.io.js"></script> -->

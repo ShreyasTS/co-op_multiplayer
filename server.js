@@ -79,7 +79,25 @@ io.on("connection", (socket) => {
 
   socket.on("userInput", (data) => {
     console.log(data);
-    io.to(gameViewerSocket.id).emit("playerInputs", data);
+    if (gameViewerSocket.id) {
+      io.to(gameViewerSocket.id).emit("playerInputs", data);
+    }
+  });
+
+  socket.on("boomSound", (data) => {
+    players.forEach((player) => {
+      if (player.getPlayerName() == data.clientname) {
+        io.to(player.playerSocket.id).emit("boomSound");
+      }
+    });
+  });
+
+  socket.on("hapticResponse", (data) => {
+    players.forEach((player) => {
+      if (player.getPlayerName() == data.responseTo) {
+        io.to(player.playerSocket.id).emit("hapticResponse", data.eventType);
+      }
+    });
   });
 
   socket.on("disconnect", (socket) => {

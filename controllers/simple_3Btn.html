@@ -16,6 +16,7 @@
       * {
         outline: none;
         font-family: Arial, Helvetica, sans-serif;
+        user-select: none;
       }
 
       html {
@@ -43,8 +44,13 @@
         border: 1px solid black;
       }
       .singleTapBtn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
         width: 100%;
         height: 100%;
+        border: 2px solid rgba(256, 256, 256, 0.5);
+        border-radius: 40px;
       }
 
       #singleTapButtonA {
@@ -191,15 +197,15 @@
         FullScreen
       </button>
       <div id="buttonHolder">
-        <button class="singleTapBtn" id="singleTapButtonA">
-          <span style="font-size: xx-large; color: black; user-select: none">A</span>
-        </button>
-        <button class="singleTapBtn" id="singleTapButtonCenter">
+        <div class="singleTapBtn" id="singleTapButtonCenter">
           <span style="font-size: xx-large; color: black; user-select: none">SHOOT</span>
-        </button>
-        <button class="singleTapBtn" id="singleTapButtonB">
+        </div>
+        <div class="singleTapBtn" id="singleTapButtonA">
+          <span style="font-size: xx-large; color: black; user-select: none">A</span>
+        </div>
+        <div class="singleTapBtn" id="singleTapButtonB">
           <span style="font-size: xx-large; color: white; user-select: none">B</span>
-        </button>
+        </div>
       </div>
     </div>
   </body>
@@ -224,6 +230,7 @@
     let gameidStatusbarDisplay = document.getElementById("gameidStatusbarDisplay");
     let notificationsStatusbar = document.getElementById("notificationsStatusbar");
     let errDisplay = document.getElementById("errDisplay");
+    let canUseHapticFeedback = true;
 
     let controllerContent = ``;
     let playerInputEmitterName = "";
@@ -317,6 +324,10 @@
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
     const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
+    const activeTouches = new Map(); // To track active touch IDs and button IDs
+
+    let boom_sound = new Audio("/game1/assets/boom_sound.mp3");
+    let laser_sound = new Audio("/game1/assets/laser.mp3");
 
     socket.on("connect", () => {
       console.log("CONN");
@@ -325,8 +336,12 @@
       connectivityStatus.style.borderRadius = "10px";
     });
 
+    socket.on("boomSound", () => {
+      boom_sound.play();
+    });
+
     socket.on("playerjoined", (data) => {
-      if ("vibrate" in navigator) {
+      if ("vibrate" in navigator && canUseHapticFeedback) {
         navigator.vibrate(100);
       }
       notificationsStatusbar.innerHTML = `${data}`;
@@ -340,6 +355,18 @@
       errDisplay.innerHTML = data.errCode;
     });
 
+    socket.on("hapticResponse", (data) => {
+      if (data == "dropBombDestroyed") {
+        if ("vibrate" in navigator && canUseHapticFeedback) {
+          navigator.vibrate([500, 50, 200, 80, 10]);
+          statusBar.style.backgroundColor = "red";
+          setTimeout(() => {
+            statusBar.style.backgroundColor = "white";
+          }, 200);
+        }
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("DIS CONN");
       connectivityStatus.innerHTML = "Disconnected 🔴";
@@ -347,31 +374,52 @@
       connectivityStatus.style.borderRadius = "10px";
     });
 
-    singleTapButtonA.addEventListener("touchstart", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+    singleTapButtonA.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+      if ("vibrate" in navigator && canUseHapticFeedback) {
+        navigator.vibrate(10);
+        // navigator.vibrate([200, 50, 100, 80, 10]);
+      }
     });
     singleTapButtonB.addEventListener("touchstart", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
-    });
-    singleTapButtonCenter.addEventListener("click", () => {
-      if ("vibrate" in navigator) {
-        navigator.vibrate(50);
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+      if ("vibrate" in navigator && canUseHapticFeedback) {
+        navigator.vibrate(10);
+        // navigator.vibrate([200, 50, 100, 80, 10]);
       }
+    });
+    singleTapButtonCenter.addEventListener("touchstart", () => {
+      laser_sound.play();
+      if ("vibrate" in navigator && canUseHapticFeedback) {
+        navigator.vibrate(100);
+        // navigator.vibrate([200, 50, 100, 80, 10]);
+      }
+
+      statusBar.style.backgroundColor = "orange";
+      setTimeout(() => {
+        statusBar.style.backgroundColor = "white";
+      }, 200);
+
       socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
     });
 
-    singleTapButtonA.addEventListener("touchmove", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
-    });
-    singleTapButtonB.addEventListener("touchmove", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
-    });
+    // singleTapButtonA.addEventListener("touchmove", () => {
+    //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+    // });
+    // singleTapButtonB.addEventListener("touchmove", () => {
+    //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+    // });
 
-    singleTapButtonA.addEventListener("touchend", () => {
+    singleTapButtonA.addEventListener("touchend", (e) => {
+      e.preventDefault();
       socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
     });
     singleTapButtonB.addEventListener("touchend", () => {
       socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
     });
+    // singleTapButtonCenter.addEventListener("touchend", () => {
+    //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
+    // });
   </script>
 </html>
