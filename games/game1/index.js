@@ -7,6 +7,16 @@ let droppedBombsList = {};
 let booms = {};
 let droppingPowerups = {};
 
+setInterval(() => {
+  console.log(
+    Object.keys(players).length,
+    Object.keys(bullets).length,
+    Object.keys(droppedBombsList).length,
+    Object.keys(booms).length,
+    Object.keys(droppingPowerups).length
+  );
+}, 1000);
+
 let playerSize = 70;
 
 let spaceshipImg = document.getElementById("spaceshipImg");
@@ -93,9 +103,8 @@ class Explosion extends Entity {
   }
 
   boom(deltaTime) {
-    for (let boomSize = 0; this.getSize().w < 100; boomSize++) {
-      this.setSize(this.getSize().w + boomSize, this.getSize().h + boomSize) / deltaTime;
-    }
+    this.setSize(this.getSize().w + 2, this.getSize().h + 2) / deltaTime;
+    this.setPos(this.getPos().x - 1, this.getPos().y - 1) / deltaTime;
     this.explode();
   }
 }
@@ -175,6 +184,7 @@ class Player extends Entity {
     this.moveSpeed = 5;
     this.direction = 0;
     this.powerupLvl = 1;
+    this.score = 0;
   }
 
   // drawPlayer() {
@@ -226,6 +236,19 @@ function drawContent(timestamp) {
   lastTime = timestamp;
   ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
   ctx.drawImage(spacebgImg, 0, 0, width, height);
+  let scoreHolder = 50 + Object.keys(players).length * 30;
+  ctx.fillStyle = "black";
+  ctx.fillRect(10, 10, 200, scoreHolder);
+  ctx.fillStyle = "white";
+  ctx.font = "30px Arial";
+  ctx.fillText("Scores: ", 20, 40);
+  ctx.font = "20px Arial";
+
+  let scoreDisplayerCounter = 70;
+  for (player in players) {
+    ctx.fillText(`${players[player].playerName} : ${players[player].score}`, 20, scoreDisplayerCounter);
+    scoreDisplayerCounter += 30;
+  }
 
   for (input in remotePlayerInputs) {
     if (players && Object.keys(players).length > 0 && remotePlayerInputs[input] && input) {
@@ -307,6 +330,8 @@ function drawContent(timestamp) {
           );
           booms[newBoomid] = newBoom;
           socket.emit("boomSound", { clientname: bullets[bullet].ownerName });
+          players[bullets[bullet].ownerName].score += 10;
+          console.log(players[bullets[bullet].ownerName].score);
           delete droppedBombsList[bomb];
           delete bullets[bullet];
           // socket.emit("playersScore", bullets[bullet].ownerName);
@@ -321,7 +346,7 @@ function drawContent(timestamp) {
 requestAnimationFrame(drawContent);
 
 setInterval(() => {
-  if (Object.keys(players).length > 0) {
+  if (Object.keys(players).length > 0 && Object.keys(droppedBombsList).length < 20) {
     let newBombId = generateRandomID(4);
     let xmax = width - 50;
     let xmin = 50;
@@ -335,7 +360,7 @@ setInterval(() => {
 }, 500);
 
 setInterval(() => {
-  if (Object.keys(players).length > 0) {
+  if (Object.keys(players).length > 0 && Object.keys(droppingPowerups).length < 5) {
     let newPowerUpid = generateRandomID(4);
     let xmax = width - 50;
     let xmin = 50;
@@ -408,7 +433,6 @@ socket.on("playerInputs", (data) => {
         }
 
         let bullet = new Bullet(bulletx, bullety, 10, 10, ctx, bulletid, data.playerName);
-        console.log(bullet);
         bullets[`${bulletid}`] = bullet;
       }
     }

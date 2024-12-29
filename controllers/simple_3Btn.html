@@ -337,7 +337,7 @@
     });
 
     socket.on("boomSound", () => {
-      boom_sound.play();
+      playBoomSound();
     });
 
     socket.on("playerjoined", (data) => {
@@ -389,8 +389,18 @@
         // navigator.vibrate([200, 50, 100, 80, 10]);
       }
     });
-    singleTapButtonCenter.addEventListener("touchstart", () => {
+
+    function playShootSound() {
+      let laser_sound = new Audio("/game1/assets/laser.mp3");
       laser_sound.play();
+    }
+    function playBoomSound() {
+      let boom_sound = new Audio("/game1/assets/boom_sound.mp3");
+      boom_sound.play();
+    }
+
+    singleTapButtonCenter.addEventListener("touchstart", () => {
+      playShootSound();
       if ("vibrate" in navigator && canUseHapticFeedback) {
         navigator.vibrate(100);
         // navigator.vibrate([200, 50, 100, 80, 10]);
