@@ -10,6 +10,11 @@ const server = createServer(app);
 const io = new Server(server, { path: "/gameController/" });
 const viewerio = new Server(server, { path: "/viewer/" });
 
+const dns = require("node:dns");
+const os = require("node:os");
+
+const options = { family: 4 };
+
 app.use(express.static("public"));
 app.use(express.static("games"));
 
@@ -136,4 +141,13 @@ viewerio.on("connection", (socket) => {
 
 server.listen(3000, () => {
   console.log("server running at http://localhost:3000");
+  dns.lookup(os.hostname(), options, (err, addr) => {
+    if (err) {
+      console.error(err);
+    } else {
+      console.log(`Game controller: ${addr}:3000`);
+      console.log(`Game Viewer: ${addr}:3000/game`);
+      console.log("-------------------------");
+    }
+  });
 });
