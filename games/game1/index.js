@@ -7,34 +7,71 @@ let droppedBombsList = {};
 let booms = {};
 let droppingPowerups = {};
 
-setInterval(() => {
-  console.log(
-    Object.keys(players).length,
-    Object.keys(bullets).length,
-    Object.keys(droppedBombsList).length,
-    Object.keys(booms).length,
-    Object.keys(droppingPowerups).length
-  );
-}, 1000);
-
 let playerSize = 70;
 
 let spaceshipImg = document.getElementById("spaceshipImg");
 let spacebgImg = document.getElementById("spacebgImg");
 let enemyshipImg = document.getElementById("enemyshipImg");
 let boomImg = document.getElementById("boomImg");
-
+let width;
+let height;
 let gameCanvas = document.getElementById("gameCanvas");
 let ctx = gameCanvas.getContext("2d");
+
+let userAgent = navigator.userAgent.toLowerCase();
+let Android = userAgent.indexOf("android") > -1;
+let ios = userAgent.indexOf("ios") > -1;
+
+console.log(userAgent);
+ctx.canvas.width = window.innerWidth;
+ctx.canvas.height = window.innerHeight;
+width = gameCanvas.width;
+height = gameCanvas.height;
+
+if (Android || ios) {
+  width = gameCanvas.width;
+  height = gameCanvas.height;
+}
+
+document.addEventListener("keypress", (e) => {
+  console.log(e);
+  if (e.key == "f") fullscreenMode();
+});
+
+function fullscreenMode() {
+  if (!document.fullscreenElement) {
+    gameCanvas.requestFullscreen();
+
+    console.log(Android, ios);
+    setTimeout(() => {
+      ctx.canvas.width = window.innerWidth;
+      ctx.canvas.height = window.innerHeight;
+      if (!Android && !ios) {
+        width = gameCanvas.width;
+        height = gameCanvas.height;
+      }
+    }, 500);
+
+    screen.orientation.lock("landscape-primary");
+  } else {
+    gameCanvas.exitFullscreen();
+    screen.orientation.lock("portrait-primary");
+    setTimeout(() => {
+      ctx.canvas.width = window.innerWidth;
+      ctx.canvas.height = window.innerHeight;
+      if (!Android && !ios) {
+        width = gameCanvas.width;
+        height = gameCanvas.height;
+      }
+    }, 500);
+  }
+}
 
 const generateRandomID = (length) =>
   Array.from(
     { length },
     () => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 62)]
   ).join("");
-
-let width = gameCanvas.width;
-let height = gameCanvas.height;
 
 class Entity {
   constructor(x, y, w, h, ctx) {
@@ -72,7 +109,7 @@ class GameManager {
 class Bullet extends Entity {
   constructor(x, y, w, h, ctx, bulletId, ownerName) {
     super(x, y, w, h, ctx);
-    this.velocity = 5;
+    this.velocity = 50;
     this.bulletId = bulletId;
     this.ownerName = ownerName;
   }
@@ -90,16 +127,22 @@ class Bullet extends Entity {
 // class Player extends Entity {}
 
 class Explosion extends Entity {
-  constructor(x, y, w, h, ctx, boomid) {
+  constructor(x, y, w, h, ctx, boomid, explosionTime) {
     super(x, y, w, h, ctx);
     this.boomid = boomid;
+    this.explosionTime = explosionTime;
+    // this.rotAngle = Math.floor(Math.random() * (360 - 0 + 1)) + 0;
   }
 
   explode() {
+    // this.ctx.save();
+    // this.ctx.translate(this.getPos().x, this.getPos().y);
+    // this.ctx.rotate((this.rotAngle * Math.PI) / 180);
     this.ctx.drawImage(boomImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+    // this.ctx.restore();
     setTimeout(() => {
       delete booms[this.boomid];
-    }, 500);
+    }, this.explosionTime);
   }
 
   boom(deltaTime) {
@@ -150,7 +193,8 @@ class DroppingBombs extends Entity {
   constructor(x, y, w, h, ctx, bombId) {
     super(x, y, w, h, ctx);
     this.bombId = bombId;
-    this.dropSpeed = 3;
+    // this.dropSpeed = 3;
+    this.dropSpeed = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
   }
 
   // drawAndDropBomb(deltaTime) {
@@ -251,7 +295,7 @@ function drawContent(timestamp) {
   }
 
   for (input in remotePlayerInputs) {
-    if (players && Object.keys(players).length > 0 && remotePlayerInputs[input] && input) {
+    if (players && Object.keys(players).length > 0 && remotePlayerInputs[input] && input && players[input]) {
       if (remotePlayerInputs[input].heldDown == true) {
         if (remotePlayerInputs[input].inputValue == "A" && players[input].getPos().x > 0) {
           players[input].direction = -players[input].moveSpeed;
@@ -296,12 +340,23 @@ function drawContent(timestamp) {
   //   }
   // }
 
+  for (powerup in droppingPowerups) {
+    droppingPowerups[powerup].drawAndDropPowerup();
+  }
+
+  for (bomb in droppedBombsList) {
+    droppedBombsList[bomb].drawAndDropBomb(deltaTime);
+  }
+
+  for (bullet in bullets) {
+    bullets[bullet].DrawAndMoveBulletUp(deltaTime);
+  }
+
   for (const player in players) {
     players[player].drawPlayer();
     players[player].updatePos();
 
     for (powerup in droppingPowerups) {
-      droppingPowerups[powerup].drawAndDropPowerup();
       if (isColliding(droppingPowerups[powerup], players[player])) {
         players[player].setPowerup(droppingPowerups[powerup].powerUpValue);
         delete droppingPowerups[powerup];
@@ -309,14 +364,12 @@ function drawContent(timestamp) {
     }
 
     for (bomb in droppedBombsList) {
-      droppedBombsList[bomb].drawAndDropBomb(deltaTime);
       // console.log(droppedBombsList[bomb]);
       if (isColliding(players[player], droppedBombsList[bomb])) {
         delete droppedBombsList[bomb];
         socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
       }
       for (bullet in bullets) {
-        bullets[bullet].DrawAndMoveBulletUp(deltaTime);
         if (isColliding(droppedBombsList[bomb], bullets[bullet])) {
           droppedBombsList[bomb].stopDroppingBombAndDestroy();
           let newBoomid = generateRandomID(4);
@@ -326,20 +379,22 @@ function drawContent(timestamp) {
             50,
             50,
             ctx,
-            newBoomid
+            newBoomid,
+            500
           );
           booms[newBoomid] = newBoom;
           socket.emit("boomSound", { clientname: bullets[bullet].ownerName });
           players[bullets[bullet].ownerName].score += 10;
-          console.log(players[bullets[bullet].ownerName].score);
+          socket.emit("playerScore", {
+            playerName: bullets[bullet].ownerName,
+            score: players[bullets[bullet].ownerName].score,
+          });
           delete droppedBombsList[bomb];
           delete bullets[bullet];
-          // socket.emit("playersScore", bullets[bullet].ownerName);
         }
       }
     }
   }
-
   requestAnimationFrame(drawContent);
 }
 
@@ -379,10 +434,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 socket.on("connect", () => {
   socket.emit("gameViewerConnected");
+  players = {};
+  bullets = {};
+  droppedBombsList = {};
+  booms = {};
+  droppingPowerups = {};
 });
 
 socket.on("playerjoined", (data) => {
-  console.log(data);
   let r = Math.floor(Math.random() * (256 - 0 + 1)) + 0;
   let g = Math.floor(Math.random() * (256 - 0 + 1)) + 0;
   let b = Math.floor(Math.random() * (256 - 0 + 1)) + 0;
@@ -394,6 +453,14 @@ socket.on("playerjoined", (data) => {
 
 socket.on("confirm", (data) => {
   console.log(data);
+});
+
+socket.on("playerDied", (data) => {
+  console.log(data);
+  let newBoomid = generateRandomID(4);
+  let newBoom = new Explosion(players[data].getPos().x, players[data].getPos().y, 50, 50, ctx, newBoomid, 800);
+  booms[newBoomid] = newBoom;
+  delete players[data];
 });
 
 socket.on("playerInputs", (data) => {
@@ -432,7 +499,7 @@ socket.on("playerInputs", (data) => {
           }
         }
 
-        let bullet = new Bullet(bulletx, bullety, 10, 10, ctx, bulletid, data.playerName);
+        let bullet = new Bullet(bulletx, bullety, 10, 85, ctx, bulletid, data.playerName);
         bullets[`${bulletid}`] = bullet;
       }
     }

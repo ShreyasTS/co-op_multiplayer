@@ -35,6 +35,7 @@
       }
 
       #buttonHolder {
+        background-color: white;
         display: none;
         flex-direction: row;
         justify-content: space-between;
@@ -63,6 +64,12 @@
       #singleTapButtonCenter {
         background-color: rgb(246, 255, 0);
         width: 70%;
+      }
+
+      #singleTapButtonA:disabled,
+      #singleTapButtonB:disabled,
+      #singleTapButtonCenter:disabled {
+        background-color: grey;
       }
 
       .flex_spaceBetween {
@@ -186,6 +193,10 @@
         <div style="display: flex; flex-direction: column">
           <span id="gameidStatusbarDisplay">GameID: </span> <span id="playerNameStatusbar">Name: </span>
         </div>
+        <div style="padding: 2px; border: 2px solid black; border-radius: 10px">
+          <div>Lives: <span id="lives_indicator">❤️❤️❤️</span></div>
+          <div>Score: <span id="score_indicator">0</span></div>
+        </div>
         <span id="notificationsStatusbar">:Notifications:</span>
         <span id="connectivityStatus">Disonnected 🔴</span>
       </div>
@@ -213,6 +224,16 @@
 
   <script>
     //
+
+    // let gyroscope = new Gyroscope({ frequency: 60 });
+
+    // gyroscope.addEventListener("reading", (e) => {
+    //   console.log(`Angular velocity along the X-axis ${gyroscope.x}`);
+    //   console.log(`Angular velocity along the Y-axis ${gyroscope.y}`);
+    //   console.log(`Angular velocity along the Z-axis ${gyroscope.z}`);
+    // });
+    // gyroscope.start();
+
     const socket = io({ autoConnect: false, path: "/gameController" });
 
     let controllerContentHolder = document.getElementById("controllerContentHolder");
@@ -231,6 +252,15 @@
     let notificationsStatusbar = document.getElementById("notificationsStatusbar");
     let errDisplay = document.getElementById("errDisplay");
     let canUseHapticFeedback = true;
+    let canTakeUserInput = true;
+    let score_indicator = document.getElementById("score_indicator");
+    let lives_indicator = document.getElementById("lives_indicator");
+
+    const singleTapButtonA = document.getElementById("singleTapButtonA");
+    const singleTapButtonB = document.getElementById("singleTapButtonB");
+    const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
+
+    let totalLives = 3;
 
     let controllerContent = ``;
     let playerInputEmitterName = "";
@@ -321,9 +351,6 @@
     //   socket.connect("/gameController");
     // });
 
-    const singleTapButtonA = document.getElementById("singleTapButtonA");
-    const singleTapButtonB = document.getElementById("singleTapButtonB");
-    const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
     const activeTouches = new Map(); // To track active touch IDs and button IDs
 
     let boom_sound = new Audio("/game1/assets/boom_sound.mp3");
@@ -357,14 +384,39 @@
 
     socket.on("hapticResponse", (data) => {
       if (data == "dropBombDestroyed") {
-        if ("vibrate" in navigator && canUseHapticFeedback) {
-          navigator.vibrate([500, 50, 200, 80, 10]);
-          statusBar.style.backgroundColor = "red";
-          setTimeout(() => {
-            statusBar.style.backgroundColor = "white";
-          }, 200);
+        totalLives -= 1;
+        lives_indicator.innerHTML = "❤️".repeat(totalLives);
+        if (totalLives <= 0) {
+          socket.emit("playerDied");
+          canTakeUserInput = false;
+          lives_indicator.innerHTML = "💀";
+          singleTapButtonA.style.backgroundColor = "grey";
+          singleTapButtonA.style.border = "2px solid darkgrey";
+          singleTapButtonB.style.backgroundColor = "grey";
+          singleTapButtonB.style.backgroundColor = "2px solid darkgrey";
+          singleTapButtonCenter.style.backgroundColor = "grey";
+          singleTapButtonCenter.style.backgroundColor = "2px solid darkgrey";
+          if ("vibrate" in navigator && canUseHapticFeedback) {
+            navigator.vibrate([50, 100, 800, 50, 100, 800]);
+            statusBar.style.backgroundColor = "red";
+            setTimeout(() => {
+              statusBar.style.backgroundColor = "white";
+            }, 500);
+          }
+        } else {
+          if ("vibrate" in navigator && canUseHapticFeedback) {
+            navigator.vibrate([400, 50, 150, 80, 10]);
+            statusBar.style.backgroundColor = "red";
+            setTimeout(() => {
+              statusBar.style.backgroundColor = "white";
+            }, 500);
+          }
         }
       }
+    });
+
+    socket.on("playerScore", (data) => {
+      score_indicator.innerHTML = data;
     });
 
     socket.on("disconnect", () => {
@@ -376,17 +428,13 @@
 
     singleTapButtonA.addEventListener("touchstart", (e) => {
       e.preventDefault();
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
-      if ("vibrate" in navigator && canUseHapticFeedback) {
-        navigator.vibrate(10);
-        // navigator.vibrate([200, 50, 100, 80, 10]);
+      if (canTakeUserInput) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
       }
     });
     singleTapButtonB.addEventListener("touchstart", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
-      if ("vibrate" in navigator && canUseHapticFeedback) {
-        navigator.vibrate(10);
-        // navigator.vibrate([200, 50, 100, 80, 10]);
+      if (canTakeUserInput) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
       }
     });
 
@@ -400,18 +448,20 @@
     }
 
     singleTapButtonCenter.addEventListener("touchstart", () => {
-      playShootSound();
-      if ("vibrate" in navigator && canUseHapticFeedback) {
-        navigator.vibrate(100);
-        // navigator.vibrate([200, 50, 100, 80, 10]);
+      if (canTakeUserInput) {
+        playShootSound();
+        if ("vibrate" in navigator && canUseHapticFeedback) {
+          navigator.vibrate(100);
+          // navigator.vibrate([200, 50, 100, 80, 10]);
+        }
+
+        statusBar.style.backgroundColor = "orange";
+        setTimeout(() => {
+          statusBar.style.backgroundColor = "white";
+        }, 200);
+
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
       }
-
-      statusBar.style.backgroundColor = "orange";
-      setTimeout(() => {
-        statusBar.style.backgroundColor = "white";
-      }, 200);
-
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
     });
 
     // singleTapButtonA.addEventListener("touchmove", () => {
@@ -423,10 +473,14 @@
 
     singleTapButtonA.addEventListener("touchend", (e) => {
       e.preventDefault();
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+      if (canTakeUserInput) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+      }
     });
     singleTapButtonB.addEventListener("touchend", () => {
-      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+      if (canTakeUserInput) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+      }
     });
     // singleTapButtonCenter.addEventListener("touchend", () => {
     //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });

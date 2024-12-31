@@ -11,6 +11,10 @@ class User {
     return this.playerName;
   }
 
+  getSocketId() {
+    return this.playerSocketId;
+  }
+
   setPlayerControllerSocket(controllerSocket) {
     this.controllerSocket = controllerSocket;
   }

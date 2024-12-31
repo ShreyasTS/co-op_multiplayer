@@ -47,17 +47,24 @@
       #gameCanvas {
         border: 1px solid black;
       }
+      #full_screenBtn {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        padding: 5px;
+      }
     </style>
   </head>
   <body>
     <div>
-      <p id="playerInputs"></p>
+      <button id="full_screenBtn" onclick="fullscreenMode()">Full screen</button>
       <!-- <canvas id="gameCanvas" width="800" height="600"></canvas> -->
       <canvas id="gameCanvas" width="1920" height="1080"></canvas>
       <img id="spaceshipImg" style="display: none" src="/game1/assets/spaceship.png" alt="" />
       <img id="spacebgImg" style="display: none" src="/game1/assets/spacebg.jpg" alt="" />
       <img id="enemyshipImg" style="display: none" src="/game1/assets/enemyship.png" alt="" />
       <img id="boomImg" style="display: none" src="/game1/assets/boom1.png" alt="" />
+      <img id="missileImg" style="display: none" src="/game1/assets/missile.png" alt="" />
     </div>
   </body>
   <!-- <script src="/viewer/socket.io.js"></script> -->

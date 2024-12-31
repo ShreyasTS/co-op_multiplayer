@@ -47,7 +47,6 @@ io.on("connection", (socket) => {
     newPlayer.setLobbyid(lobbyid);
     newLobby.addPlayerToLobby(newPlayer);
     lobbies.push(newLobby);
-    console.log(lobbies);
     socket.join(lobbyid);
     io.to(gameViewerSocket.id).emit("playerjoined", data.name);
     cb({ gameid: lobbyid });
@@ -78,7 +77,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("userInput", (data) => {
-    console.log(data);
     if (gameViewerSocket.id) {
       io.to(gameViewerSocket.id).emit("playerInputs", data);
     }
@@ -100,8 +98,29 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on("disconnect", (socket) => {
+  socket.on("playerScore", (data) => {
+    players.forEach((player) => {
+      if (player.getPlayerName() == data.playerName) {
+        io.to(player.playerSocket.id).emit("playerScore", data.score);
+      }
+    });
+  });
+
+  socket.on("playerDied", () => {
+    players.forEach((player) => {
+      if (player.playerSocket.id == socket.id) {
+        io.to(gameViewerSocket.id).emit("playerDied", player.getPlayerName());
+      }
+    });
+  });
+
+  socket.on("disconnect", () => {
     console.log(`Player ${socket.id} left :(`);
+    players.forEach((player) => {
+      if (player.playerSocket.id == socket.id) {
+        io.to(gameViewerSocket.id).emit("playerDied", player.getPlayerName());
+      }
+    });
   });
 });
 // ----------------------------------------------------------------------------------
