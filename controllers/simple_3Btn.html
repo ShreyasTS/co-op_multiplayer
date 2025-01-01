@@ -65,10 +65,15 @@
         background-color: rgb(246, 255, 0);
         width: 70%;
       }
+      #singleTapButtonPowerUp {
+        background-color: rgb(255, 136, 0);
+        width: 70%;
+      }
 
       #singleTapButtonA:disabled,
       #singleTapButtonB:disabled,
-      #singleTapButtonCenter:disabled {
+      #singleTapButtonCenter:disabled,
+      #singleTapButtonPowerUp:disabled {
         background-color: grey;
       }
 
@@ -208,8 +213,13 @@
         FullScreen
       </button>
       <div id="buttonHolder">
-        <div class="singleTapBtn" id="singleTapButtonCenter">
-          <span style="font-size: xx-large; color: black; user-select: none">SHOOT</span>
+        <div style="display: flex; flex-direction: column; width: 100%; height: 100%">
+          <div class="singleTapBtn" id="singleTapButtonCenter">
+            <span style="font-size: xx-large; color: black; user-select: none">SHOOT</span>
+          </div>
+          <div class="singleTapBtn" id="singleTapButtonPowerUp">
+            <span id="powerUpsBtn" style="font-size: xx-large; color: black; user-select: none">-</span>
+          </div>
         </div>
         <div class="singleTapBtn" id="singleTapButtonA">
           <span style="font-size: xx-large; color: black; user-select: none">A</span>
@@ -259,6 +269,7 @@
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
     const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
+    const powerUpsBtn = document.getElementById("powerUpsBtn");
 
     let totalLives = 3;
 
@@ -291,34 +302,38 @@
     }
 
     function createGame() {
-      socket.emit("assignName", { name: playerName_create.value }, (data) => {
-        gameid.innerHTML = `<span>GAME CODE:<span style="font-weight: bold; border: 2px solid black; padding: 5px; border-radius: 10px" >${data.gameid}</span></span>`;
-        controllerContentHolder.style.display = "none";
-        gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${data.gameid}</strong>`;
-        playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
-        playerInputEmitterName = playerName_create.value;
-      });
-      fullscreenMode();
+      if (playerName_create.value.length > 0) {
+        socket.emit("assignName", { name: playerName_create.value }, (data) => {
+          gameid.innerHTML = `<span>GAME CODE:<span style="font-weight: bold; border: 2px solid black; padding: 5px; border-radius: 10px" >${data.gameid}</span></span>`;
+          controllerContentHolder.style.display = "none";
+          gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${data.gameid}</strong>`;
+          playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
+          playerInputEmitterName = playerName_create.value;
+        });
+        fullscreenMode();
+      }
     }
 
     function joinGame() {
-      console.log({ gameid: gameid.value, playername: playerName.value });
-      socket.emit("joinLobby", { gameid: joinGameId.value, playername: playerName.value }, (response) => {
-        console.log(response);
-        if (response.status == "OK") {
-          console.log("YOU'RE IN!");
-          gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${joinGameId.value}</strong>`;
-          playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
-          playerInputEmitterName = playerName.value;
-          fullscreenMode();
-        } else {
-          console.log("WRONG GAME ID!");
-          errDisplay.innerHTML = "Invalid Game ID";
-          setTimeout(() => {
-            errDisplay.innerHTML = "";
-          }, 3000);
-        }
-      });
+      if (gameid.value.length > 0 && playerName.value.length > 0) {
+        console.log({ gameid: gameid.value, playername: playerName.value });
+        socket.emit("joinLobby", { gameid: joinGameId.value, playername: playerName.value }, (response) => {
+          console.log(response);
+          if (response.status == "OK") {
+            console.log("YOU'RE IN!");
+            gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${joinGameId.value}</strong>`;
+            playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
+            playerInputEmitterName = playerName.value;
+            fullscreenMode();
+          } else {
+            console.log("WRONG GAME ID!");
+            errDisplay.innerHTML = "Invalid Game ID";
+            setTimeout(() => {
+              errDisplay.innerHTML = "";
+            }, 3000);
+          }
+        });
+      }
     }
 
     document.addEventListener("fullscreenchange", () => {
@@ -365,7 +380,12 @@
 
     socket.on("boomSound", () => {
       playBoomSound();
+      if ("vibrate" in navigator && canUseHapticFeedback) {
+        navigator.vibrate([300, 0, 200, 0, 100, 0, 50, 0], 1);
+      }
     });
+
+    //NUKE HAPTIC: navigator.vibrate([800, 0, 200, 0, 100, 0, 50, 0], 1);
 
     socket.on("playerjoined", (data) => {
       if ("vibrate" in navigator && canUseHapticFeedback) {
@@ -415,6 +435,12 @@
       }
     });
 
+    socket.on("newPowerUpEarned", (data) => {
+      if (data == "nuke") {
+        powerUpsBtn.innerText = "🚀";
+      }
+    });
+
     socket.on("playerScore", (data) => {
       score_indicator.innerHTML = data;
     });
@@ -432,9 +458,20 @@
         socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
       }
     });
-    singleTapButtonB.addEventListener("touchstart", () => {
+    singleTapButtonB.addEventListener("touchstart", (e) => {
+      e.preventDefault();
       if (canTakeUserInput) {
         socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+      }
+    });
+
+    powerUpsBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      if (canTakeUserInput) {
+        if (powerUpsBtn.innerText == "🚀") {
+          socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: false });
+          powerUpsBtn.innerText = "-";
+        }
       }
     });
 
@@ -449,6 +486,7 @@
 
     singleTapButtonCenter.addEventListener("touchstart", () => {
       if (canTakeUserInput) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
         playShootSound();
         if ("vibrate" in navigator && canUseHapticFeedback) {
           navigator.vibrate(100);
@@ -459,8 +497,6 @@
         setTimeout(() => {
           statusBar.style.backgroundColor = "white";
         }, 200);
-
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
       }
     });
 

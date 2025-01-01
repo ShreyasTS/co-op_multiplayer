@@ -111,6 +111,14 @@ io.on("connection", (socket) => {
     });
   });
 
+  socket.on("newPowerUpEarned", (data) => {
+    players.forEach((player) => {
+      if (player.getPlayerName() == data.givenTo) {
+        io.to(player.playerSocket.id).emit("newPowerUpEarned", data.powerUpType);
+      }
+    });
+  });
+
   socket.on("playerDied", () => {
     players.forEach((player) => {
       if (player.playerSocket.id == socket.id) {

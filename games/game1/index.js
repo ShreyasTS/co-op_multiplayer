@@ -12,6 +12,8 @@ let playerSize = 70;
 let spaceshipImg = document.getElementById("spaceshipImg");
 let spacebgImg = document.getElementById("spacebgImg");
 let enemyshipImg = document.getElementById("enemyshipImg");
+let enemyship2Img = document.getElementById("enemyship2Img");
+let nukeImg = document.getElementById("nukeImg");
 let boomImg = document.getElementById("boomImg");
 let width;
 let height;
@@ -107,18 +109,24 @@ class GameManager {
 }
 
 class Bullet extends Entity {
-  constructor(x, y, w, h, ctx, bulletId, ownerName) {
+  constructor(x, y, w, h, ctx, bulletId, ownerName, bulletDir) {
     super(x, y, w, h, ctx);
-    this.velocity = 50;
+    this.bulletSpeed = 50;
     this.bulletId = bulletId;
     this.ownerName = ownerName;
+    this.bulletDir = bulletDir;
   }
 
   DrawAndMoveBulletUp(deltaTime) {
-    this.ctx.fillStyle = "orange";
+    if (this.bulletDir == "up") {
+      this.ctx.fillStyle = "orange";
+      this.setPos(this.getPos().x, this.getPos().y - this.bulletSpeed) / deltaTime;
+    } else {
+      this.ctx.fillStyle = "red";
+      this.setPos(this.getPos().x, this.getPos().y + this.bulletSpeed) / deltaTime;
+    }
     this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
-    this.setPos(this.getPos().x, this.getPos().y - this.velocity) / deltaTime;
-    if (this.y < -20) {
+    if (this.y < -20 || this.y > height) {
       delete bullets[this.bulletId];
     }
   }
@@ -153,34 +161,51 @@ class Explosion extends Entity {
 }
 
 class powerUps extends Entity {
-  constructor(x, y, w, h, ctx, powerupId) {
+  constructor(x, y, w, h, ctx, powerupId, powerUpType) {
     super(x, y, w, h, ctx);
     this.powerupId = powerupId;
+    this.powerUpType = powerUpType;
     this.powerUpValue = Math.floor(Math.random() * (3 - 1 + 1)) + 1;
     this.dropSpeed = 2;
   }
 
   drawAndDropPowerup(deltaTime) {
-    this.powerUpValue == 3
-      ? (this.ctx.fillStyle = "red")
-      : this.powerUpValue == 2
-      ? (this.ctx.fillStyle = "blue")
-      : (this.ctx.fillStyle = "green");
-    // this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
-    this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
-    this.powerUpValue == 3
-      ? (this.ctx.fillStyle = "black")
-      : this.powerUpValue == 2
-      ? (this.ctx.fillStyle = "white")
-      : (this.ctx.fillStyle = "black");
-    this.ctx.fillStyle = "white";
-    this.ctx.font = "20px Arial";
-    // this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h / 2);
-    this.ctx.fillText(
-      `${this.powerUpValue}`,
-      this.getPos().x + this.getSize().w / 2,
-      this.getPos().y + this.getSize().h / 2
-    );
+    if (this.powerUpType == "bullet") {
+      this.powerUpValue == 3
+        ? (this.ctx.fillStyle = "red")
+        : this.powerUpValue == 2
+        ? (this.ctx.fillStyle = "blue")
+        : (this.ctx.fillStyle = "green");
+      // this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+      this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+      this.powerUpValue == 3
+        ? (this.ctx.fillStyle = "black")
+        : this.powerUpValue == 2
+        ? (this.ctx.fillStyle = "white")
+        : (this.ctx.fillStyle = "black");
+      this.ctx.fillStyle = "white";
+      this.ctx.font = "20px Arial";
+      // this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h / 2);
+      this.ctx.fillText(
+        `${this.powerUpValue}`,
+        this.getPos().x + this.getSize().w / 2,
+        this.getPos().y + this.getSize().h / 2
+      );
+    } else if (this.powerUpType == "nuke") {
+      this.ctx.fillStyle = "white";
+      this.ctx.fillRect(this.getPos().x - 2, this.getPos().y - 2, this.getSize().w + 4, this.getSize().h + 4);
+      this.ctx.fillStyle = "black";
+      this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+      this.ctx.drawImage(
+        nukeImg,
+        this.getPos().x + this.getSize().w * 0.1,
+        this.getPos().y + this.getSize().h * 0.1,
+        this.getSize().w * 0.8,
+        this.getSize().h * 0.8
+      );
+    }
+
+    //----------------------------------------------------------------------------------------------
 
     this.setPos(this.getPos().x, this.getPos().y + this.dropSpeed) / deltaTime;
     if (this.y > height + 10) {
@@ -190,11 +215,14 @@ class powerUps extends Entity {
 }
 
 class DroppingBombs extends Entity {
-  constructor(x, y, w, h, ctx, bombId) {
+  constructor(x, y, w, h, ctx, bombId, shipType) {
     super(x, y, w, h, ctx);
     this.bombId = bombId;
+    this.shipType = shipType;
     // this.dropSpeed = 3;
     this.dropSpeed = Math.floor(Math.random() * (8 - 3 + 1)) + 3;
+    this.droppInterval;
+    this.isDestroyed = false;
   }
 
   // drawAndDropBomb(deltaTime) {
@@ -208,15 +236,44 @@ class DroppingBombs extends Entity {
   drawAndDropBomb(deltaTime) {
     this.ctx.fillStyle = "red";
     // this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
-    this.ctx.drawImage(enemyshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+    if (this.shipType == "normal") {
+      this.ctx.drawImage(enemyshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+    } else {
+      this.ctx.drawImage(enemyship2Img, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+    }
     this.setPos(this.getPos().x, this.getPos().y + this.dropSpeed) / deltaTime;
     if (this.y > height + 10) {
-      delete droppedBombsList[this.bombId];
+      droppedBombsList[bomb].destroySelf();
     }
   }
 
   stopDroppingBombAndDestroy() {
     this.dropSpeed = 0;
+  }
+
+  shipType2Shoot() {
+    if (this.shipType != "normal") {
+      this.droppInterval = setInterval(() => {
+        let bulletid = generateRandomID(4);
+        let bullet = new Bullet(
+          this.getPos().x + this.getSize().w / 2,
+          this.getPos().y + this.getSize().h / 2,
+          10,
+          30,
+          this.ctx,
+          bulletid,
+          this.bombId,
+          "down"
+        );
+        bullet.bulletSpeed = 10;
+        bullets[`${bulletid}`] = bullet;
+      }, (Math.floor(Math.random() * 2) + 1) * 1000);
+    }
+  }
+
+  destroySelf() {
+    clearInterval(this.droppInterval);
+    this.isDestroyed = true;
   }
 }
 
@@ -346,6 +403,9 @@ function drawContent(timestamp) {
 
   for (bomb in droppedBombsList) {
     droppedBombsList[bomb].drawAndDropBomb(deltaTime);
+    if (droppedBombsList[bomb].isDestroyed) {
+      delete droppedBombsList[bomb];
+    }
   }
 
   for (bullet in bullets) {
@@ -358,7 +418,12 @@ function drawContent(timestamp) {
 
     for (powerup in droppingPowerups) {
       if (isColliding(droppingPowerups[powerup], players[player])) {
-        players[player].setPowerup(droppingPowerups[powerup].powerUpValue);
+        if (droppingPowerups[powerup].powerUpType == "nuke") {
+          socket.emit("newPowerUpEarned", { givenTo: player, powerUpType: "nuke" });
+        } else {
+          socket.emit("newPowerUpEarned", { givenTo: player, powerUpType: "multiShooter" });
+          players[player].setPowerup(droppingPowerups[powerup].powerUpValue);
+        }
         delete droppingPowerups[powerup];
       }
     }
@@ -366,11 +431,11 @@ function drawContent(timestamp) {
     for (bomb in droppedBombsList) {
       // console.log(droppedBombsList[bomb]);
       if (isColliding(players[player], droppedBombsList[bomb])) {
-        delete droppedBombsList[bomb];
+        droppedBombsList[bomb].destroySelf();
         socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
       }
       for (bullet in bullets) {
-        if (isColliding(droppedBombsList[bomb], bullets[bullet])) {
+        if (isColliding(droppedBombsList[bomb], bullets[bullet]) && bullets[bullet].bulletDir == "up") {
           droppedBombsList[bomb].stopDroppingBombAndDestroy();
           let newBoomid = generateRandomID(4);
           let newBoom = new Explosion(
@@ -384,12 +449,21 @@ function drawContent(timestamp) {
           );
           booms[newBoomid] = newBoom;
           socket.emit("boomSound", { clientname: bullets[bullet].ownerName });
-          players[bullets[bullet].ownerName].score += 10;
+          if (droppedBombsList[bomb].shipType != "normal") {
+            players[bullets[bullet].ownerName].score += 10;
+          } else {
+            players[bullets[bullet].ownerName].score += 20;
+          }
           socket.emit("playerScore", {
             playerName: bullets[bullet].ownerName,
             score: players[bullets[bullet].ownerName].score,
           });
-          delete droppedBombsList[bomb];
+          droppedBombsList[bomb].destroySelf();
+          delete bullets[bullet];
+        }
+        if (isColliding(players[player], bullets[bullet]) && bullets[bullet].bulletDir == "down") {
+          socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
+          droppedBombsList[bomb].destroySelf();
           delete bullets[bullet];
         }
       }
@@ -409,7 +483,12 @@ setInterval(() => {
     let ymin = -50;
     let bombx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
     let bomby = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-    let bomb = new DroppingBombs(bombx, bomby, 60, 60, ctx, newBombId);
+    let shipType = Math.random() > 0.3 ? "normal" : "none";
+    let bomb = new DroppingBombs(bombx, bomby, 60, 60, ctx, newBombId, shipType);
+    if (shipType == "none") {
+      bomb.dropSpeed = 2;
+    }
+    bomb.shipType2Shoot();
     droppedBombsList[newBombId] = bomb;
   }
 }, 500);
@@ -423,10 +502,14 @@ setInterval(() => {
     let ymin = -50;
     let powerupx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
     let powerupy = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-    let powerup = new powerUps(powerupx, powerupy, 60, 60, ctx, newPowerUpid);
+    let powerUpType = Math.random() < 0.1 ? "nuke" : "bullet";
+    let powerUpXSize = powerUpType == "nuke" ? 80 : 60;
+    let powerUpYSize = powerUpType == "nuke" ? 60 : 60;
+
+    let powerup = new powerUps(powerupx, powerupy, powerUpXSize, powerUpYSize, ctx, newPowerUpid, powerUpType);
     droppingPowerups[newPowerUpid] = powerup;
   }
-}, 10000);
+}, 3000);
 
 document.addEventListener("DOMContentLoaded", () => {
   socket.connect();
@@ -456,11 +539,13 @@ socket.on("confirm", (data) => {
 });
 
 socket.on("playerDied", (data) => {
-  console.log(data);
-  let newBoomid = generateRandomID(4);
-  let newBoom = new Explosion(players[data].getPos().x, players[data].getPos().y, 50, 50, ctx, newBoomid, 800);
-  booms[newBoomid] = newBoom;
-  delete players[data];
+  if (players[data]) {
+    console.log(data);
+    let newBoomid = generateRandomID(4);
+    let newBoom = new Explosion(players[data].getPos().x, players[data].getPos().y, 50, 50, ctx, newBoomid, 800);
+    booms[newBoomid] = newBoom;
+    delete players[data];
+  }
 });
 
 socket.on("playerInputs", (data) => {
@@ -499,9 +584,31 @@ socket.on("playerInputs", (data) => {
           }
         }
 
-        let bullet = new Bullet(bulletx, bullety, 10, 85, ctx, bulletid, data.playerName);
+        let bullet = new Bullet(bulletx, bullety, 10, 85, ctx, bulletid, data.playerName, "up");
         bullets[`${bulletid}`] = bullet;
       }
+    } else if (data.inputValue == "nuke") {
+      console.log("ALL GONE! NUKED!");
+      let bombedShipsCounter = 0;
+      for (b in droppedBombsList) {
+        let newBoomid = generateRandomID(4);
+        let newBoom = new Explosion(
+          droppedBombsList[b].getPos().x,
+          droppedBombsList[b].getPos().y,
+          50,
+          50,
+          ctx,
+          newBoomid,
+          500
+        );
+        socket.emit("hapticResponse", { responseTo: data.playerName, eventType: "-" });
+        socket.emit("boomSound", { clientname: data.playerName });
+        booms[newBoomid] = newBoom;
+        droppedBombsList[b].destroySelf();
+        droppedBombsList[b].shipType == "normal" ? (bombedShipsCounter += 10) : (bombedShipsCounter += 20);
+      }
+      players[data.playerName].score += bombedShipsCounter;
+      droppedBombsList = {};
     }
   }
 
