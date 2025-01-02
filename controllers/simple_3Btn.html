@@ -203,6 +203,8 @@
           <div>Score: <span id="score_indicator">0</span></div>
         </div>
         <span id="notificationsStatusbar">:Notifications:</span>
+        <button style="font-size: 20px" id="toggleVibrationBtn" onclick="toggleVibration()">📳</button>
+        <button style="font-size: 20px" id="toggleSoundnBtn" onclick="toggleSound()">🔇</button>
         <span id="connectivityStatus">Disonnected 🔴</span>
       </div>
       <button
@@ -262,9 +264,12 @@
     let notificationsStatusbar = document.getElementById("notificationsStatusbar");
     let errDisplay = document.getElementById("errDisplay");
     let canUseHapticFeedback = true;
+    let canPlaySound = true;
     let canTakeUserInput = true;
     let score_indicator = document.getElementById("score_indicator");
     let lives_indicator = document.getElementById("lives_indicator");
+    let toggleVibrationBtn = document.getElementById("toggleVibrationBtn");
+    let toggleSoundnBtn = document.getElementById("toggleSoundnBtn");
 
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
@@ -272,6 +277,23 @@
     const powerUpsBtn = document.getElementById("powerUpsBtn");
 
     let totalLives = 3;
+
+    function toggleVibration() {
+      canUseHapticFeedback = !canUseHapticFeedback;
+      if (canUseHapticFeedback) {
+        toggleVibrationBtn.innerText = "🚫📳";
+      } else {
+        toggleVibrationBtn.innerText = "📳";
+      }
+    }
+    function toggleSound() {
+      canPlaySound = !canPlaySound;
+      if (canPlaySound) {
+        toggleSoundnBtn.innerText = "🔇";
+      } else {
+        toggleSoundnBtn.innerText = "🔊";
+      }
+    }
 
     let controllerContent = ``;
     let playerInputEmitterName = "";
@@ -477,11 +499,15 @@
 
     function playShootSound() {
       let laser_sound = new Audio("/game1/assets/laser.mp3");
-      laser_sound.play();
+      if (canPlaySound) {
+        laser_sound.play();
+      }
     }
     function playBoomSound() {
       let boom_sound = new Audio("/game1/assets/boom_sound.mp3");
-      boom_sound.play();
+      if (canPlaySound) {
+        boom_sound.play();
+      }
     }
 
     singleTapButtonCenter.addEventListener("touchstart", () => {

@@ -6,6 +6,7 @@ let bullets = {};
 let droppedBombsList = {};
 let booms = {};
 let droppingPowerups = {};
+let cautionZones = {};
 
 let playerSize = 70;
 
@@ -15,6 +16,9 @@ let enemyshipImg = document.getElementById("enemyshipImg");
 let enemyship2Img = document.getElementById("enemyship2Img");
 let nukeImg = document.getElementById("nukeImg");
 let boomImg = document.getElementById("boomImg");
+let cautionImg = document.getElementById("cautionImg");
+let missileImg = document.getElementById("missileImg");
+
 let width;
 let height;
 let gameCanvas = document.getElementById("gameCanvas");
@@ -214,6 +218,51 @@ class powerUps extends Entity {
   }
 }
 
+class CautionZone extends Entity {
+  constructor(x, y, w, h, ctx, cautionZoneId) {
+    super(x, y, w, h, ctx);
+    this.cautionZoneId = cautionZoneId;
+    this.isLaunched = false;
+    this.missileSpeed = 10;
+    this.isDestroyed = false;
+  }
+
+  launch() {
+    //called after warning timer
+    setTimeout(() => {
+      console.log(this.cautionZoneId, "ZONE DELETED");
+      delete cautionZones[this.cautionZoneId];
+    }, 8000);
+  }
+
+  timeoutAndLaunchMissile() {
+    //Called when spawned
+    setTimeout(() => {
+      this.launch();
+      this.setPos(this.getPos().x, height + 100);
+      this.isLaunched = true;
+      this.missileSpeed = 20;
+      console.log(this.cautionZoneId, "ZONE LAUNCHED");
+    }, 5000);
+  }
+
+  drawMissileMoveUp(timestamp) {
+    //called every frame with timestamp passed
+    if (this.isLaunched) {
+      this.ctx.drawImage(missileImg, this.getPos().x, this.getPos().y, this.getSize().w + 50, this.getSize().h + 50);
+      this.setPos(this.getPos().x, this.getPos().y - this.missileSpeed);
+    } else {
+      if (parseInt((timestamp / 500) % 2) == 0) {
+        this.ctx.drawImage(cautionImg, this.getPos().x, height - 100, this.getSize().w + 20, this.getSize().h + 20);
+      }
+    }
+  }
+
+  destroySelf() {
+    this.isDestroyed = true;
+  }
+}
+
 class DroppingBombs extends Entity {
   constructor(x, y, w, h, ctx, bombId, shipType) {
     super(x, y, w, h, ctx);
@@ -376,26 +425,12 @@ function drawContent(timestamp) {
     booms[exploion].boom(deltaTime);
   }
 
-  // for (input in remotePlayerInputs) {
-  //   if (players && Object.keys(players).length > 0 && remotePlayerInputs[input] && input) {
-  //     for (inp in remotePlayerInputs[input]) {
-  //       if (remotePlayerInputs[input][inp].heldDown == true) {
-  //         console.log("HELD DOWN", inp, input, remotePlayerInputs[input][inp], remotePlayerInputs[input][inp].heldDown);
-  //         if (inp == "A" && players[input].getPos().x > 0) {
-  //           players[input].direction = -players[input].moveSpeed;
-  //         } else if (inp == "B" && players[input].getPos().x < width - players[input].getSize().w) {
-  //           players[input].direction = players[input].moveSpeed;
-  //         } else {
-  //           players[input].direction = 0;
-  //         }
-  //       } else {
-  //         if (players[input]) {
-  //           players[input].direction = 0;
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  for (cautionzone in cautionZones) {
+    cautionZones[cautionzone].drawMissileMoveUp(timestamp);
+    if (cautionZones[cautionzone].isDestroyed) {
+      delete cautionZones[cautionzone];
+    }
+  }
 
   for (powerup in droppingPowerups) {
     droppingPowerups[powerup].drawAndDropPowerup();
@@ -425,6 +460,13 @@ function drawContent(timestamp) {
           players[player].setPowerup(droppingPowerups[powerup].powerUpValue);
         }
         delete droppingPowerups[powerup];
+      }
+    }
+
+    for (cautionzone in cautionZones) {
+      if (isColliding(cautionZones[cautionzone], players[player])) {
+        cautionZones[cautionzone].destroySelf();
+        socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
       }
     }
 
@@ -483,7 +525,7 @@ setInterval(() => {
     let ymin = -50;
     let bombx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
     let bomby = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-    let shipType = Math.random() > 0.3 ? "normal" : "none";
+    let shipType = Math.random() > 0.2 ? "normal" : "none";
     let bomb = new DroppingBombs(bombx, bomby, 60, 60, ctx, newBombId, shipType);
     if (shipType == "none") {
       bomb.dropSpeed = 2;
@@ -492,6 +534,16 @@ setInterval(() => {
     droppedBombsList[newBombId] = bomb;
   }
 }, 500);
+
+setInterval(() => {
+  if (Object.keys(players).length > 0 && Object.keys(cautionZones).length < 8) {
+    let newZoneid = generateRandomID(4);
+    let randomX = Math.floor(Math.random() * (width - 50 + 1)) + 50;
+    let cautionZone = new CautionZone(randomX, width - 100, 50, 50, ctx, newZoneid);
+    cautionZone.timeoutAndLaunchMissile();
+    cautionZones[newZoneid] = cautionZone;
+  }
+}, 3000);
 
 setInterval(() => {
   if (Object.keys(players).length > 0 && Object.keys(droppingPowerups).length < 5) {
