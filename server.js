@@ -23,10 +23,10 @@ let players = [];
 let gameViewerSocket;
 
 app.get("/", (req, res) => {
-  res.sendFile(join(__dirname, "/controllers/simple_3Btn.html"));
+  res.sendFile(join(__dirname, "/controllers/simple_3Btn_joystick.html"));
 });
 app.get("/game", (req, res) => {
-  res.sendFile(join(__dirname, "/games/game1/index.html"));
+  res.sendFile(join(__dirname, "/games/game1/spaceShooter.html"));
 });
 
 const randomId = function (length = 6) {

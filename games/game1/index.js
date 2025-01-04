@@ -136,8 +136,6 @@ class Bullet extends Entity {
   }
 }
 
-// class Player extends Entity {}
-
 class Explosion extends Entity {
   constructor(x, y, w, h, ctx, boomid, explosionTime) {
     super(x, y, w, h, ctx);
@@ -230,7 +228,6 @@ class CautionZone extends Entity {
   launch() {
     //called after warning timer
     setTimeout(() => {
-      console.log(this.cautionZoneId, "ZONE DELETED");
       delete cautionZones[this.cautionZoneId];
     }, 8000);
   }
@@ -242,8 +239,7 @@ class CautionZone extends Entity {
       this.setPos(this.getPos().x, height + 100);
       this.isLaunched = true;
       this.missileSpeed = 20;
-      console.log(this.cautionZoneId, "ZONE LAUNCHED");
-    }, 5000);
+    }, 3000);
   }
 
   drawMissileMoveUp(timestamp) {
@@ -335,22 +331,34 @@ class Player extends Entity {
     this.direction = 0;
     this.powerupLvl = 1;
     this.score = 0;
+    this.hasTakenDamage = false;
+    this.canTakeDamage = true;
+    // this.timeToResetDamage = 3;
+    this.prevTimestamp = 0;
   }
 
-  // drawPlayer() {
-  //   this.ctx.fillStyle = this.color;
-  //   this.ctx.fillRect(this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
-  //   this.ctx.fillStyle = "black";
-  //   this.ctx.font = "30px Arial";
-  //   this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h / 2);
-  // }
-  drawPlayer() {
-    this.ctx.fillStyle = this.color;
-    this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
-    this.ctx.fillStyle = "white";
-    this.ctx.font = "30px Arial";
-    // this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h / 2);
-    this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 10);
+  drawPlayer(timestamp) {
+    if (this.hasTakenDamage) {
+      this.canTakeDamage = false;
+      if (timestamp - this.prevTimestamp >= 3000) {
+        this.prevTimestamp = timestamp;
+        this.canTakeDamage = true;
+        this.hasTakenDamage = false;
+      }
+
+      if (Math.floor(timestamp / 200) % 2 == 0) {
+        this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+        this.ctx.fillStyle = this.color;
+        this.ctx.font = "30px Arial";
+        this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 10);
+      }
+    } else {
+      this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
+      this.prevTimestamp = timestamp;
+      this.ctx.fillStyle = this.color;
+      this.ctx.font = "30px Arial";
+      this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 10);
+    }
   }
 
   updatePos() {
@@ -381,6 +389,117 @@ function isColliding(entity1, entity2) {
   }
 }
 
+// setInterval(() => {
+//   if (Object.keys(players).length > 0 && Object.keys(droppedBombsList).length < 20) {
+//     let newBombId = generateRandomID(4);
+//     let xmax = width - 50;
+//     let xmin = 50;
+//     let ymax = -10;
+//     let ymin = -50;
+//     let bombx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
+//     let bomby = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
+//     let shipType = Math.random() > 0.2 ? "normal" : "none";
+//     let bomb = new DroppingBombs(bombx, bomby, 60, 60, ctx, newBombId, shipType);
+//     if (shipType == "none") {
+//       bomb.dropSpeed = 2;
+//     }
+//     bomb.shipType2Shoot();
+//     droppedBombsList[newBombId] = bomb;
+//   }
+// }, 500);
+
+// setInterval(() => {
+//   if (Object.keys(players).length > 0 && Object.keys(cautionZones).length < 8) {
+//     let newZoneid = generateRandomID(4);
+//     let randomX = Math.floor(Math.random() * (width - 50 + 1)) + 50;
+//     let cautionZone = new CautionZone(randomX, width - 100, 50, 50, ctx, newZoneid);
+//     cautionZone.timeoutAndLaunchMissile();
+//     cautionZones[newZoneid] = cautionZone;
+//   }
+// }, 3000);
+
+// setInterval(() => {
+//   if (Object.keys(players).length > 0 && Object.keys(droppingPowerups).length < 5) {
+//     let newPowerUpid = generateRandomID(4);
+//     let xmax = width - 50;
+//     let xmin = 50;
+//     let ymax = -10;
+//     let ymin = -50;
+//     let powerupx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
+//     let powerupy = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
+//     let powerUpType = Math.random() < 0.1 ? "nuke" : "bullet";
+//     let powerUpXSize = powerUpType == "nuke" ? 80 : 60;
+//     let powerUpYSize = powerUpType == "nuke" ? 60 : 60;
+
+//     let powerup = new powerUps(powerupx, powerupy, powerUpXSize, powerUpYSize, ctx, newPowerUpid, powerUpType);
+//     droppingPowerups[newPowerUpid] = powerup;
+//   }
+// }, 3000);
+
+let prev_cautionZoneSpawnTime = 0;
+let maxCautionZonesCount = 8;
+function cautionZoneSpawner(timestamp, spawnTimeInteval) {
+  if (timestamp - prev_cautionZoneSpawnTime >= spawnTimeInteval) {
+    prev_cautionZoneSpawnTime = timestamp;
+    if (Object.keys(cautionZones).length < maxCautionZonesCount) {
+      let newZoneid = generateRandomID(4);
+      let randomX = Math.floor(Math.random() * (width - 50 + 1)) + 50;
+
+      let cautionZone = new CautionZone(randomX, width - 100, 50, 50, ctx, newZoneid);
+      cautionZone.timeoutAndLaunchMissile();
+      cautionZones[newZoneid] = cautionZone;
+    }
+  }
+}
+
+let prev_PowerupSpawnTime = 0;
+let maxPowerUpsCount = 5;
+function powerUpSpawner(timestamp, spawnTimeInteval) {
+  if (timestamp - prev_PowerupSpawnTime >= spawnTimeInteval) {
+    if (Object.keys(droppingPowerups).length < maxPowerUpsCount) {
+      prev_PowerupSpawnTime = timestamp;
+      let newPowerUpid = generateRandomID(4);
+      let xmax = width - 50;
+      let xmin = 50;
+      let ymax = -10;
+      let ymin = -50;
+      let powerupx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
+      let powerupy = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
+      let powerUpType = Math.random() < 0.1 ? "nuke" : "bullet";
+      let powerUpXSize = powerUpType == "nuke" ? 80 : 60;
+      let powerUpYSize = powerUpType == "nuke" ? 60 : 60;
+
+      let powerup = new powerUps(powerupx, powerupy, powerUpXSize, powerUpYSize, ctx, newPowerUpid, powerUpType);
+      droppingPowerups[newPowerUpid] = powerup;
+    }
+  }
+}
+
+let prev_DropBombSpawnTime = 0;
+let maxDropBombCount = 20;
+
+function dropBombSpawner(timestamp, spawnTimeInteval) {
+  if (timestamp - prev_DropBombSpawnTime >= spawnTimeInteval) {
+    if (Object.keys(droppedBombsList).length < maxDropBombCount) {
+      prev_DropBombSpawnTime = timestamp;
+      let newBombId = generateRandomID(4);
+      let xmax = width - 50;
+      let xmin = 50;
+      let ymax = -10;
+      let ymin = -50;
+      let bombx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
+      let bomby = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
+      let shipType = Math.random() > 0.2 ? "normal" : "none";
+      let bomb = new DroppingBombs(bombx, bomby, 60, 60, ctx, newBombId, shipType);
+      if (shipType == "none") {
+        bomb.dropSpeed = 2;
+      }
+      bomb.shipType2Shoot();
+      droppedBombsList[newBombId] = bomb;
+    }
+  }
+}
+
 function drawContent(timestamp) {
   let deltaTime = timestamp - lastTime;
   lastTime = timestamp;
@@ -392,7 +511,15 @@ function drawContent(timestamp) {
   ctx.fillStyle = "white";
   ctx.font = "30px Arial";
   ctx.fillText("Scores: ", 20, 40);
+  ctx.fillText(timestamp, width - 150, 80);
+  ctx.fillText(deltaTime, width - 150, 120);
   ctx.font = "20px Arial";
+
+  if (Object.keys(players).length > 0) {
+    cautionZoneSpawner(timestamp, 3000);
+    powerUpSpawner(timestamp, 3000);
+    dropBombSpawner(timestamp, 500);
+  }
 
   let scoreDisplayerCounter = 70;
   for (player in players) {
@@ -448,7 +575,7 @@ function drawContent(timestamp) {
   }
 
   for (const player in players) {
-    players[player].drawPlayer();
+    players[player].drawPlayer(timestamp);
     players[player].updatePos();
 
     for (powerup in droppingPowerups) {
@@ -464,7 +591,8 @@ function drawContent(timestamp) {
     }
 
     for (cautionzone in cautionZones) {
-      if (isColliding(cautionZones[cautionzone], players[player])) {
+      if (isColliding(cautionZones[cautionzone], players[player]) && players[player].canTakeDamage) {
+        players[player].hasTakenDamage = true;
         cautionZones[cautionzone].destroySelf();
         socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
       }
@@ -472,7 +600,8 @@ function drawContent(timestamp) {
 
     for (bomb in droppedBombsList) {
       // console.log(droppedBombsList[bomb]);
-      if (isColliding(players[player], droppedBombsList[bomb])) {
+      if (isColliding(players[player], droppedBombsList[bomb]) && players[player].canTakeDamage) {
+        players[player].hasTakenDamage = true;
         droppedBombsList[bomb].destroySelf();
         socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
       }
@@ -503,7 +632,12 @@ function drawContent(timestamp) {
           droppedBombsList[bomb].destroySelf();
           delete bullets[bullet];
         }
-        if (isColliding(players[player], bullets[bullet]) && bullets[bullet].bulletDir == "down") {
+        if (
+          isColliding(players[player], bullets[bullet]) &&
+          bullets[bullet].bulletDir == "down" &&
+          players[player].canTakeDamage
+        ) {
+          players[player].hasTakenDamage = true;
           socket.emit("hapticResponse", { responseTo: player, eventType: "dropBombDestroyed" });
           droppedBombsList[bomb].destroySelf();
           delete bullets[bullet];
@@ -515,53 +649,6 @@ function drawContent(timestamp) {
 }
 
 requestAnimationFrame(drawContent);
-
-setInterval(() => {
-  if (Object.keys(players).length > 0 && Object.keys(droppedBombsList).length < 20) {
-    let newBombId = generateRandomID(4);
-    let xmax = width - 50;
-    let xmin = 50;
-    let ymax = -10;
-    let ymin = -50;
-    let bombx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
-    let bomby = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-    let shipType = Math.random() > 0.2 ? "normal" : "none";
-    let bomb = new DroppingBombs(bombx, bomby, 60, 60, ctx, newBombId, shipType);
-    if (shipType == "none") {
-      bomb.dropSpeed = 2;
-    }
-    bomb.shipType2Shoot();
-    droppedBombsList[newBombId] = bomb;
-  }
-}, 500);
-
-setInterval(() => {
-  if (Object.keys(players).length > 0 && Object.keys(cautionZones).length < 8) {
-    let newZoneid = generateRandomID(4);
-    let randomX = Math.floor(Math.random() * (width - 50 + 1)) + 50;
-    let cautionZone = new CautionZone(randomX, width - 100, 50, 50, ctx, newZoneid);
-    cautionZone.timeoutAndLaunchMissile();
-    cautionZones[newZoneid] = cautionZone;
-  }
-}, 3000);
-
-setInterval(() => {
-  if (Object.keys(players).length > 0 && Object.keys(droppingPowerups).length < 5) {
-    let newPowerUpid = generateRandomID(4);
-    let xmax = width - 50;
-    let xmin = 50;
-    let ymax = -10;
-    let ymin = -50;
-    let powerupx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
-    let powerupy = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-    let powerUpType = Math.random() < 0.1 ? "nuke" : "bullet";
-    let powerUpXSize = powerUpType == "nuke" ? 80 : 60;
-    let powerUpYSize = powerUpType == "nuke" ? 60 : 60;
-
-    let powerup = new powerUps(powerupx, powerupy, powerUpXSize, powerUpYSize, ctx, newPowerUpid, powerUpType);
-    droppingPowerups[newPowerUpid] = powerup;
-  }
-}, 3000);
 
 document.addEventListener("DOMContentLoaded", () => {
   socket.connect();
