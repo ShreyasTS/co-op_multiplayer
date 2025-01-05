@@ -10,6 +10,9 @@ let cautionZones = {};
 
 let playerSize = 70;
 
+let hasGameStarted = true;
+let canSpawnObjects = true;
+
 let spaceshipImg = document.getElementById("spaceshipImg");
 let spacebgImg = document.getElementById("spacebgImg");
 let enemyshipImg = document.getElementById("enemyshipImg");
@@ -335,6 +338,7 @@ class Player extends Entity {
     this.canTakeDamage = true;
     // this.timeToResetDamage = 3;
     this.prevTimestamp = 0;
+    this.hasPressedStart = false;
   }
 
   drawPlayer(timestamp) {
@@ -516,10 +520,21 @@ function drawContent(timestamp) {
   ctx.font = "20px Arial";
 
   if (Object.keys(players).length > 0) {
+    //&& hasGameStarted && canSpawnObjects) {
     cautionZoneSpawner(timestamp, 3000);
     powerUpSpawner(timestamp, 3000);
     dropBombSpawner(timestamp, 500);
   }
+
+  if (!hasGameStarted && !canSpawnObjects) {
+    ctx.fillStyle = "white";
+    ctx.font = "40px Arial";
+    ctx.fillRect(width / 2 - 300, height / 2 - 40, 510, 50);
+    ctx.fillStyle = "black";
+    ctx.fillText("Press Start in your controller", width / 2 - 300, height / 2);
+  }
+
+  hasGameStarted = Object.values(players).every((player) => player.hasPressedStart == true);
 
   let scoreDisplayerCounter = 70;
   for (player in players) {

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
     <title>Controller</title>
     <style>
       html,
@@ -63,10 +63,12 @@
       }
       #singleTapButtonCenter {
         background-color: rgb(246, 255, 0);
+        border: 2px solid black;
         width: 70%;
       }
       #singleTapButtonPowerUp {
         background-color: rgb(255, 136, 0);
+        border: 2px solid black;
         width: 70%;
       }
 
@@ -150,6 +152,39 @@
       #notificationsStatusbar {
         align-self: center;
       }
+
+      #joystick_area {
+        width: 90%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 90%;
+        border: 2px solid black;
+        border-radius: 10px;
+        margin: 10px;
+        overflow: hidden;
+      }
+
+      .joystickDot {
+        background-color: red;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 50%;
+        position: absolute;
+        transform: translate(-50%, -50%);
+      }
+
+      @media screen and (orientation: portrait) {
+        .joystickDot {
+          position: absolute;
+        }
+      }
+      /* landscape */
+      @media screen and (orientation: landscape) {
+        .joystickDot {
+          position: absolute;
+        }
+      }
     </style>
   </head>
   <body>
@@ -198,8 +233,10 @@
         <div style="display: flex; flex-direction: column">
           <span id="gameidStatusbarDisplay">GameID: </span> <span id="playerNameStatusbar">Name: </span>
         </div>
+        <!-- DEBUG BTN - TO BE REMOVED POST DEV -->
+        <button onclick="window.location.reload()">🔄️</button>
         <div style="padding: 2px; border: 2px solid black; border-radius: 10px">
-          <div>Lives: <span id="lives_indicator">❤️❤️❤️</span></div>
+          <div>Life: <span id="lives_indicator">❤️❤️❤️</span></div>
           <div>Score: <span id="score_indicator">0</span></div>
         </div>
         <span id="notificationsStatusbar">:Notifications:</span>
@@ -223,12 +260,27 @@
             <span id="powerUpsBtn" style="font-size: xx-large; color: black; user-select: none">-</span>
           </div>
         </div>
+        <div id="joystick_area">
+          <div style="font-weight: bold"><<< SWIPE >>></div>
+          <!-- <div class="joystickDot" id="0" style="top: 0px; left: 0px; z-index: 999"></div> -->
+        </div>
+
+        <!--  -->
+        <!-- <div style="display: flex; flex-direction: column; width: 100%; height: 100%">
+          <div class="singleTapBtn" id="singleTapButtonCenter">
+            <span style="font-size: xx-large; color: black; user-select: none">SHOOT</span>
+          </div>
+          <div class="singleTapBtn" id="singleTapButtonPowerUp">
+            <span id="powerUpsBtn" style="font-size: xx-large; color: black; user-select: none">-</span>
+          </div>
+        </div>
         <div class="singleTapBtn" id="singleTapButtonA">
           <span style="font-size: xx-large; color: black; user-select: none">A</span>
         </div>
         <div class="singleTapBtn" id="singleTapButtonB">
           <span style="font-size: xx-large; color: white; user-select: none">B</span>
-        </div>
+        </div> -->
+        <!--  -->
       </div>
     </div>
   </body>
@@ -263,13 +315,15 @@
     let gameidStatusbarDisplay = document.getElementById("gameidStatusbarDisplay");
     let notificationsStatusbar = document.getElementById("notificationsStatusbar");
     let errDisplay = document.getElementById("errDisplay");
-    let canUseHapticFeedback = true;
-    let canPlaySound = true;
+    let canUseHapticFeedback = false;
+    let canPlaySound = false;
     let canTakeUserInput = true;
     let score_indicator = document.getElementById("score_indicator");
     let lives_indicator = document.getElementById("lives_indicator");
     let toggleVibrationBtn = document.getElementById("toggleVibrationBtn");
     let toggleSoundnBtn = document.getElementById("toggleSoundnBtn");
+
+    let joystick_area = document.getElementById("joystick_area");
 
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
@@ -281,16 +335,20 @@
     function toggleVibration() {
       canUseHapticFeedback = !canUseHapticFeedback;
       if (canUseHapticFeedback) {
+        window.localStorage.setItem("vibration", true);
         toggleVibrationBtn.innerText = "🚫📳";
       } else {
+        window.localStorage.setItem("vibration", false);
         toggleVibrationBtn.innerText = "📳";
       }
     }
     function toggleSound() {
       canPlaySound = !canPlaySound;
       if (canPlaySound) {
+        window.localStorage.setItem("sound", true);
         toggleSoundnBtn.innerText = "🔇";
       } else {
+        window.localStorage.setItem("sound", false);
         toggleSoundnBtn.innerText = "🔊";
       }
     }
@@ -371,10 +429,6 @@
       }
     });
 
-    document.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-    });
-
     //
     function fullscreenMode() {
       if (!document.fullscreenElement) {
@@ -388,9 +442,21 @@
         screen.orientation.lock("portrait-primary");
       }
     }
-    // document.addEventListener("DOMContentLoaded", () => {
-    //   socket.connect("/gameController");
-    // });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      canUseHapticFeedback = window.localStorage.getItem("vibration") == "true" ? true : false;
+      canPlaySound = window.localStorage.getItem("sound") == "true" ? true : false;
+      if (canUseHapticFeedback) {
+        toggleVibrationBtn.innerText = "🚫📳";
+      } else {
+        toggleVibrationBtn.innerText = "📳";
+      }
+      if (canPlaySound) {
+        toggleSoundnBtn.innerText = "🔇";
+      } else {
+        toggleSoundnBtn.innerText = "🔊";
+      }
+    });
 
     const activeTouches = new Map(); // To track active touch IDs and button IDs
 
@@ -478,17 +544,62 @@
       connectivityStatus.style.borderRadius = "10px";
     });
 
-    singleTapButtonA.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      if (canTakeUserInput) {
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+    // singleTapButtonA.addEventListener("touchstart", (e) => {
+    //   e.preventDefault();
+    //   if (canTakeUserInput) {
+    //     socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+    //   }
+    // });
+    // singleTapButtonB.addEventListener("touchstart", (e) => {
+    //   e.preventDefault();
+    //   if (canTakeUserInput) {
+    //     socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+    //   }
+    // });
+
+    let joystickTouchedXPos = 0;
+    let joystickTouchedYPos = 0;
+    joystick_area.addEventListener("touchstart", (e) => {
+      let joystickRect = joystick_area.getBoundingClientRect();
+      joystickTouchedXPos = e.changedTouches[0].screenX;
+      // [...e.changedTouches].forEach((touch) => {
+      //   console.log(touch);
+      //   const dot = document.createElement("div");
+      //   dot.classList.add("joystickDot");
+      //   // let x = parseInt(touch.clientX - joystickRect.left);
+      //   // let y = parseInt(touch.clientY - joystickRect.top);
+      //   console.log(touch.clientX, touch.clientY);
+      //   dot.style.top = `${touch.clientX}px`;
+      //   dot.style.left = `${touch.clientY}px`;
+      //   dot.id = touch.identifier;
+      //   joystick_area.append(dot);
+      // });
+    });
+    let isSwipedLeft = false;
+    let isSwipedRight = false;
+    joystick_area.addEventListener("touchmove", (e) => {
+      if (e.changedTouches[0].screenX < joystickTouchedXPos) {
+        if (!isSwipedLeft) {
+          socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+        }
+        isSwipedLeft = true;
+        isSwipedRight = false;
+      } else {
+        if (!isSwipedRight) {
+          socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+        }
+        isSwipedLeft = false;
+        isSwipedRight = true;
       }
     });
-    singleTapButtonB.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      if (canTakeUserInput) {
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+    joystick_area.addEventListener("touchend", (e) => {
+      if (isSwipedLeft) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+      } else if (isSwipedRight) {
+        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
       }
+      isSwipedLeft = false;
+      isSwipedRight = false;
     });
 
     powerUpsBtn.addEventListener("touchstart", (e) => {
@@ -537,17 +648,17 @@
     //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
     // });
 
-    singleTapButtonA.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      if (canTakeUserInput) {
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
-      }
-    });
-    singleTapButtonB.addEventListener("touchend", () => {
-      if (canTakeUserInput) {
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
-      }
-    });
+    // singleTapButtonA.addEventListener("touchend", (e) => {
+    //   e.preventDefault();
+    //   if (canTakeUserInput) {
+    //     socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+    //   }
+    // });
+    // singleTapButtonB.addEventListener("touchend", () => {
+    //   if (canTakeUserInput) {
+    //     socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+    //   }
+    // });
     // singleTapButtonCenter.addEventListener("touchend", () => {
     //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
     // });

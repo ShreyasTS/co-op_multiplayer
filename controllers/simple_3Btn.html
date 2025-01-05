@@ -281,16 +281,20 @@
     function toggleVibration() {
       canUseHapticFeedback = !canUseHapticFeedback;
       if (canUseHapticFeedback) {
+        window.localStorage.setItem("vibration", true);
         toggleVibrationBtn.innerText = "🚫📳";
       } else {
+        window.localStorage.setItem("vibration", false);
         toggleVibrationBtn.innerText = "📳";
       }
     }
     function toggleSound() {
       canPlaySound = !canPlaySound;
       if (canPlaySound) {
+        window.localStorage.setItem("sound", true);
         toggleSoundnBtn.innerText = "🔇";
       } else {
+        window.localStorage.setItem("sound", false);
         toggleSoundnBtn.innerText = "🔊";
       }
     }
@@ -388,9 +392,21 @@
         screen.orientation.lock("portrait-primary");
       }
     }
-    // document.addEventListener("DOMContentLoaded", () => {
-    //   socket.connect("/gameController");
-    // });
+
+    document.addEventListener("DOMContentLoaded", () => {
+      canUseHapticFeedback = window.localStorage.getItem("vibration") == "true" ? true : false;
+      canPlaySound = window.localStorage.getItem("sound") == "true" ? true : false;
+      if (canUseHapticFeedback) {
+        toggleVibrationBtn.innerText = "🚫📳";
+      } else {
+        toggleVibrationBtn.innerText = "📳";
+      }
+      if (canPlaySound) {
+        toggleSoundnBtn.innerText = "🔇";
+      } else {
+        toggleSoundnBtn.innerText = "🔊";
+      }
+    });
 
     const activeTouches = new Map(); // To track active touch IDs and button IDs
 
