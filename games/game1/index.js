@@ -469,7 +469,7 @@ function powerUpSpawner(timestamp, spawnTimeInteval) {
       let ymin = -50;
       let powerupx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
       let powerupy = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-      let powerUpType = Math.random() < 0.1 ? "nuke" : "bullet";
+      let powerUpType = Math.random() < 0.5 ? "nuke" : "bullet";
       let powerUpXSize = powerUpType == "nuke" ? 80 : 60;
       let powerUpYSize = powerUpType == "nuke" ? 60 : 60;
 
@@ -598,7 +598,6 @@ function drawContent(timestamp) {
         if (droppingPowerups[powerup].powerUpType == "nuke") {
           socket.emit("newPowerUpEarned", { givenTo: player, powerUpType: "nuke" });
         } else {
-          socket.emit("newPowerUpEarned", { givenTo: player, powerUpType: "multiShooter" });
           players[player].setPowerup(droppingPowerups[powerup].powerUpValue);
         }
         delete droppingPowerups[powerup];
@@ -635,6 +634,7 @@ function drawContent(timestamp) {
           );
           booms[newBoomid] = newBoom;
           socket.emit("boomSound", { clientname: bullets[bullet].ownerName });
+          socket.emit("hapticResponse", { responseTo: bullets[bullet].ownerName, eventType: "boom" });
           if (droppedBombsList[bomb].shipType != "normal") {
             players[bullets[bullet].ownerName].score += 10;
           } else {
@@ -755,8 +755,8 @@ socket.on("playerInputs", (data) => {
           newBoomid,
           500
         );
-        socket.emit("hapticResponse", { responseTo: data.playerName, eventType: "-" });
-        socket.emit("boomSound", { clientname: data.playerName });
+        // socket.emit("hapticResponse", { responseTo: "all", eventType: "-" });
+        // socket.emit("boomSound", { clientname: "all" });
         booms[newBoomid] = newBoom;
         droppedBombsList[b].destroySelf();
         droppedBombsList[b].shipType == "normal" ? (bombedShipsCounter += 10) : (bombedShipsCounter += 20);

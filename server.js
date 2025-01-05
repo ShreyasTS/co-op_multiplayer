@@ -10,11 +10,6 @@ const server = createServer(app);
 const io = new Server(server, { path: "/gameController/" });
 const viewerio = new Server(server, { path: "/viewer/" });
 
-const dns = require("node:dns");
-const os = require("node:os");
-
-const options = { family: 4 };
-
 app.use(express.static("public"));
 app.use(express.static("games"));
 
@@ -25,11 +20,15 @@ let gameViewerSocket;
 app.get("/", (req, res) => {
   res.sendFile(join(__dirname, "/controllers/simple_3Btn_joystick.html"));
 });
+
+app.get("/userTest", (req, res) => {
+  res.sendFile(join(__dirname, "/controllers/TEST_simple_3Btn_joystick.html"));
+});
 app.get("/game", (req, res) => {
   res.sendFile(join(__dirname, "/games/game1/spaceShooter.html"));
 });
 
-const randomId = function (length = 6) {
+const randomId = function (length = 3) {
   return Math.random()
     .toString(36)
     .substring(2, length + 2);
@@ -39,7 +38,6 @@ io.on("connection", (socket) => {
   console.log("New user connected: ", socket.id);
 
   socket.on("gameViewerConnected", () => {
-    console.log("Game viewer Ready!");
     gameViewerSocket = socket;
     console.log("GAME VIEWER SOCKET: ", socket.id);
   });
@@ -53,41 +51,36 @@ io.on("connection", (socket) => {
     newLobby.addPlayerToLobby(newPlayer);
     lobbies.push(newLobby);
     socket.join(lobbyid);
+    gameViewerSocket.join(lobbyid);
     io.to(gameViewerSocket.id).emit("playerjoined", data.name);
     cb({ gameid: lobbyid });
   });
 
   socket.on("joinLobby", (data, cb) => {
-    if (lobbies.length <= 0) {
-      // let newPlayer = new User(data.name, socket);
-      // players.push(newPlayer);
-      // console.log("1>", lobbies[data.gameid]);
-      // lobbies;
-      // lobbies.push(data.playername);
-      // socket.join(data.gameid);
-      cb({ status: "NOK" });
-      // socket.emit("err", { errCode: "0001" });
-    } else {
-      let newPlayer = new User(data.name, socket);
-      players.push(newPlayer);
-      console.log("2>", lobbies[data.gameid]);
-      lobbies.push(data.playername);
-      socket.join(data.gameid);
-      cb({ status: "OK" });
-      socket.to(data.gameid).emit("playerjoined", `New Player joined! ${data.playername}`);
-      console.log(gameViewerSocket.id);
-      io.to(gameViewerSocket.id).emit("playerjoined", data.playername);
-      console.log("2>", lobbies);
-    }
+    console.log(data);
+    let newPlayer = new User(data.playername, socket);
+    players.push(newPlayer);
+    lobbies.push(data.playername);
+    socket.join(String(data.gameid).toUpperCase());
+    // socket.to(data.gameid).emit("playerjoined", `New Player joined! ${data.playername}`);
+    gameViewerSocket.join(data.gameid);
+    cb({ status: "OK" });
+    io.to(gameViewerSocket.id).emit("playerjoined", data.playername);
+    console.log(Array.from(socket.rooms)[1]);
   });
 
   socket.on("userInput", (data) => {
-    if (gameViewerSocket.id) {
+    if (gameViewerSocket) {
       io.to(gameViewerSocket.id).emit("playerInputs", data);
+      if (data.inputValue == "nuke") {
+        io.to(Array.from(socket.rooms)[1]).emit("boomSound");
+        io.to(Array.from(socket.rooms)[1]).emit("hapticResponse", "nuke");
+      }
     }
   });
 
   socket.on("boomSound", (data) => {
+    console.log("BOOM:", data);
     players.forEach((player) => {
       if (player.getPlayerName() == data.clientname) {
         io.to(player.playerSocket.id).emit("boomSound");
@@ -96,7 +89,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("hapticResponse", (data) => {
+    console.log("HAPTIC: ", data);
     players.forEach((player) => {
+      console.log(player.getPlayerName(), player.playerSocket.id);
       if (player.getPlayerName() == data.responseTo) {
         io.to(player.playerSocket.id).emit("hapticResponse", data.eventType);
       }
@@ -104,6 +99,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("playerScore", (data) => {
+    console.log("SCORE: ", data);
     players.forEach((player) => {
       if (player.getPlayerName() == data.playerName) {
         io.to(player.playerSocket.id).emit("playerScore", data.score);
@@ -112,6 +108,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("newPowerUpEarned", (data) => {
+    console.log("POWERUP EARNED!", data.powerUpType, data.givenTo);
     players.forEach((player) => {
       if (player.getPlayerName() == data.givenTo) {
         io.to(player.playerSocket.id).emit("newPowerUpEarned", data.powerUpType);
@@ -138,10 +135,7 @@ io.on("connection", (socket) => {
 });
 // ----------------------------------------------------------------------------------
 viewerio.on("connection", (socket) => {
-  console.log("Game viewer Ready!");
-
   socket.emit("confirm", "CONNECTED!");
-
   socket.on("disconnect", () => {
     console.log("Viewer not ready!!!", socket.id);
   });
@@ -149,13 +143,13 @@ viewerio.on("connection", (socket) => {
 
 server.listen(3000, () => {
   console.log("server running at http://localhost:3000");
-  dns.lookup(os.hostname(), options, (err, addr) => {
-    if (err) {
-      console.error(err);
-    } else {
-      console.log(`Game controller: ${addr}:3000`);
-      console.log(`Game Viewer: ${addr}:3000/game`);
-      console.log("-------------------------");
-    }
-  });
+  // dns.lookup(os.hostname(), options, (err, addr) => {
+  //   if (err) {
+  //     console.error(err);
+  //   } else {
+  //     console.log(`Game controller: ${addr}:3000`);
+  //     console.log(`Game Viewer: ${addr}:3000/game`);
+  //     console.log("-------------------------");
+  //   }
+  // });
 });

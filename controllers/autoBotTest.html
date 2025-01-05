@@ -223,11 +223,7 @@
         <button style="font-size: 20px" id="toggleSoundnBtn" onclick="toggleSound()">🔇</button>
         <span id="connectivityStatus">Disonnected 🔴</span>
       </div>
-      <button
-        id="fullScreenBtn"
-        style="position: fixed; top: 50%; right: 50%; width: 100px; padding: 10px"
-        onclick="fullscreenMode()"
-      >
+      <button id="fullScreenBtn" style="position: fixed; top: 50%; right: 50%; width: 100px; padding: 10px">
         FullScreen
       </button>
       <div id="buttonHolder">
@@ -306,7 +302,7 @@
     const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
     const powerUpsBtn = document.getElementById("powerUpsBtn");
 
-    let totalLives = 3;
+    let totalLives = 10;
 
     function toggleVibration() {
       canUseHapticFeedback = !canUseHapticFeedback;
@@ -342,12 +338,20 @@
       console.log(data);
     });
 
+    const generateRandomID = (length) =>
+      Array.from(
+        { length },
+        () => "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 62)]
+      ).join("");
+
     function showCreate() {
       createHolder.style.display = "flex";
       joinHolder.style.display = "none";
       socket.connect();
       document.getElementById("joinBtn").disabled = true;
       document.getElementById("createBtn").disabled = true;
+      playerName_create.value = generateRandomID(4);
+      createGame();
     }
     function showJoin() {
       createHolder.style.display = "none";
@@ -365,8 +369,41 @@
           gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${data.gameid}</strong>`;
           playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
           playerInputEmitterName = playerName_create.value;
+          openController();
+
+          setInterval(() => {
+            // socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: true });
+            let randomChoice = Math.floor(Math.random() * 3);
+            let resetTime = 3000;
+            console.log(randomChoice, resetTime);
+            if (randomChoice == 0) {
+              socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+              setTimeout(() => {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+              }, resetTime);
+            }
+            if (randomChoice == 1) {
+              socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+              setTimeout(() => {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+              }, resetTime);
+            }
+            if (randomChoice == 2) {
+              socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: true });
+              setTimeout(() => {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
+              }, resetTime);
+            }
+          }, 2000);
+
+          setInterval(() => {
+            if (powerUpsBtn.innerText == "🚀") {
+              socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: false });
+              powerUpsBtn.innerText = "-";
+            }
+            socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
+          }, 500);
         });
-        fullscreenMode();
       }
     }
 
@@ -380,7 +417,44 @@
             gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${joinGameId.value}</strong>`;
             playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
             playerInputEmitterName = playerName.value;
-            fullscreenMode();
+            openController();
+
+            setInterval(() => {
+              // socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: true });
+              let randomChoice = Math.floor(Math.random() * 3);
+              let resetTime = 3000;
+              console.log(randomChoice, resetTime);
+              if (randomChoice == 0) {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });
+                setTimeout(() => {
+                  socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+                }, resetTime);
+              }
+              if (randomChoice == 1) {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: true });
+                setTimeout(() => {
+                  socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+                }, resetTime);
+              }
+              if (randomChoice == 2) {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: true });
+                setTimeout(() => {
+                  socket.emit("userInput", {
+                    playerName: playerInputEmitterName,
+                    inputValue: "SHOOT",
+                    heldDown: false,
+                  });
+                }, resetTime);
+              }
+            }, 2000);
+
+            setInterval(() => {
+              if (powerUpsBtn.innerText == "🚀") {
+                socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: false });
+                powerUpsBtn.innerText = "-";
+              }
+              socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "SHOOT", heldDown: false });
+            }, 500);
           } else {
             console.log("WRONG GAME ID!");
             errDisplay.innerHTML = "Invalid Game ID";
@@ -392,32 +466,25 @@
       }
     }
 
-    document.addEventListener("fullscreenchange", () => {
-      console.log("CHANGED!");
-      if (document.fullscreenElement) {
-        fullScreenBtn.style.display = "none";
-        buttonHolder.style.display = "flex";
-        statusBar.style.display = "flex";
-      } else {
-        fullScreenBtn.style.display = "block";
-        statusBar.style.display = "none";
-        buttonHolder.style.display = "none";
-      }
-    });
+    function openController() {
+      fullScreenBtn.style.display = "none";
+      buttonHolder.style.display = "flex";
+      statusBar.style.display = "flex";
+    }
 
     //
-    function fullscreenMode() {
-      if (!document.fullscreenElement) {
-        buttonHolder.style.display = "flex";
-        statusBar.style.display = "flex";
-        controller.requestFullscreen();
-        screen.orientation.lock("landscape-primary");
-      } else {
-        buttonHolder.style.display = "none";
-        controller.exitFullscreen();
-        screen.orientation.lock("portrait-primary");
-      }
-    }
+    // function fullscreenMode() {
+    //   if (!document.fullscreenElement) {
+    //     buttonHolder.style.display = "flex";
+    //     statusBar.style.display = "flex";
+    //     controller.requestFullscreen();
+    //     screen.orientation.lock("landscape-primary");
+    //   } else {
+    //     buttonHolder.style.display = "none";
+    //     controller.exitFullscreen();
+    //     screen.orientation.lock("portrait-primary");
+    //   }
+    // }
 
     document.addEventListener("DOMContentLoaded", () => {
       canUseHapticFeedback = window.localStorage.getItem("vibration") == "true" ? true : false;
@@ -468,10 +535,7 @@
     });
 
     socket.on("hapticResponse", (data) => {
-      notificationsStatusbar.innerText = data;
-      setTimeout(() => {
-        notificationsStatusbar.innerText = ":Notifications:";
-      }, 5000);
+      console.log(data);
       if (data == "dropBombDestroyed") {
         totalLives -= 1;
         lives_indicator.innerHTML = "❤️".repeat(totalLives);
@@ -513,20 +577,17 @@
     });
 
     socket.on("newPowerUpEarned", (data) => {
-      console.log(data);
-
       if (data == "nuke") {
         powerUpsBtn.innerText = "🚀";
       }
     });
 
     socket.on("playerScore", (data) => {
-      console.log(data);
-
       score_indicator.innerHTML = data;
     });
 
     socket.on("disconnect", () => {
+      window.location.reload();
       console.log("DIS CONN");
       connectivityStatus.innerHTML = "Disconnected 🔴";
       connectivityStatus.style.border = "2px solid red";
