@@ -22,7 +22,7 @@ app.get("/", (req, res) => {
 });
 
 app.get("/userTest", (req, res) => {
-  res.sendFile(join(__dirname, "/controllers/TEST_simple_3Btn_joystick.html"));
+  res.sendFile(join(__dirname, "/controllers/autoBotTest.html"));
 });
 app.get("/game", (req, res) => {
   res.sendFile(join(__dirname, "/games/game1/spaceShooter.html"));
@@ -67,6 +67,11 @@ io.on("connection", (socket) => {
     cb({ status: "OK" });
     io.to(gameViewerSocket.id).emit("playerjoined", data.playername);
     console.log(Array.from(socket.rooms)[1]);
+  });
+
+  socket.on("starGameConfirm", (data) => {
+    console.log(data);
+    io.to(gameViewerSocket.id).emit("starGameConfirm", data.playerName);
   });
 
   socket.on("userInput", (data) => {

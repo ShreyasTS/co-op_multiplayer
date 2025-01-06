@@ -164,6 +164,56 @@
         margin: 10px;
         overflow: hidden;
       }
+
+      .overlay {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: rgba(106, 106, 106, 0.467);
+        -webkit-backdrop-filter: blur(3px);
+        backdrop-filter: blur(3px);
+      }
+      #startGameBtn {
+        width: 200px;
+        height: 100px;
+        font-size: xx-large;
+        font-weight: bold;
+        border-radius: 10px;
+        border: 2px solid black;
+        background-color: blueviolet;
+        color: black;
+        box-shadow: 0px 10px black;
+        /* animation: bob 1s linear infinite; */
+      }
+      #startGameBtn:active {
+        box-shadow: 0px 0px;
+        transform: translate(0px, 8px);
+        animation-play-state: paused;
+      }
+
+      @keyframes bob {
+        0% {
+          transform: translate(0px, 0px);
+        }
+        25% {
+          transform: translate(0px, -10px);
+        }
+        50% {
+          transform: translate(0px, 10px);
+        }
+        100% {
+          transform: translate(0px, 0px);
+        }
+      }
     </style>
   </head>
   <body>
@@ -231,6 +281,12 @@
         FullScreen
       </button>
       <div id="buttonHolder">
+        <div class="overlay" id="overlayStartBtn">
+          <p id="startGameWithCode" style="text-align: center; font-size: x-large; font-weight: bold">
+            Press to start game
+          </p>
+          <button onclick="starGameConfirm()" id="startGameBtn">START</button>
+        </div>
         <div style="display: flex; flex-direction: column; width: 100%; height: 100%">
           <div class="singleTapBtn" id="singleTapButtonCenter">
             <span style="font-size: xx-large; color: black; user-select: none">SHOOT</span>
@@ -306,7 +362,7 @@
     const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
     const powerUpsBtn = document.getElementById("powerUpsBtn");
 
-    let totalLives = 3;
+    let totalLives = 10;
 
     function toggleVibration() {
       canUseHapticFeedback = !canUseHapticFeedback;
@@ -331,6 +387,7 @@
 
     let controllerContent = ``;
     let playerInputEmitterName = "";
+    let gamecode = "";
 
     let isFullscreenMode = false;
 
@@ -363,8 +420,10 @@
           gameid.innerHTML = `<span>GAME CODE:<span style="font-weight: bold; border: 2px solid black; padding: 5px; border-radius: 10px" >${data.gameid}</span></span>`;
           controllerContentHolder.style.display = "none";
           gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${data.gameid}</strong>`;
+          gamecode = data.gameid;
           playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
           playerInputEmitterName = playerName_create.value;
+          document.getElementById("startGameWithCode").innerHTML = `Press to start game - Game ID : ${data.gameid}`;
         });
         fullscreenMode();
       }
@@ -378,8 +437,12 @@
           if (response.status == "OK") {
             console.log("YOU'RE IN!");
             gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${joinGameId.value}</strong>`;
+            gamecode = joinGameId.value;
             playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
             playerInputEmitterName = playerName.value;
+            document.getElementById(
+              "startGameWithCode"
+            ).innerHTML = `Press to start game - Game ID : ${joinGameId.value}`;
             fullscreenMode();
           } else {
             console.log("WRONG GAME ID!");
@@ -390,6 +453,12 @@
           }
         });
       }
+    }
+
+    function starGameConfirm() {
+      document.getElementById("buttonHolder").removeChild(document.getElementById("overlayStartBtn"));
+      let name = playerName_create.value.length > 0 ? playerName_create.value : playerName.value;
+      socket.emit("starGameConfirm", { playerName: name });
     }
 
     document.addEventListener("fullscreenchange", () => {

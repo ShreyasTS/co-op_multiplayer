@@ -10,7 +10,7 @@ let cautionZones = {};
 
 let playerSize = 70;
 
-let hasGameStarted = true;
+let hasGameStarted = false;
 let canSpawnObjects = true;
 
 let spaceshipImg = document.getElementById("spaceshipImg");
@@ -519,22 +519,24 @@ function drawContent(timestamp) {
   ctx.fillText(deltaTime, width - 150, 120);
   ctx.font = "20px Arial";
 
-  if (Object.keys(players).length > 0) {
-    //&& hasGameStarted && canSpawnObjects) {
+  if (Object.keys(players).length > 0 && hasGameStarted && canSpawnObjects) {
     cautionZoneSpawner(timestamp, 3000);
     powerUpSpawner(timestamp, 3000);
     dropBombSpawner(timestamp, 500);
   }
 
-  if (!hasGameStarted && !canSpawnObjects) {
+  if (!hasGameStarted) {
     ctx.fillStyle = "white";
     ctx.font = "40px Arial";
-    ctx.fillRect(width / 2 - 300, height / 2 - 40, 510, 50);
+    ctx.fillRect(width / 2 - 300, height / 2 - 40, 520, 50);
     ctx.fillStyle = "black";
-    ctx.fillText("Press Start in your controller", width / 2 - 300, height / 2);
+    ctx.fillText("Press start on your controller", width / 2 - 300, height / 2);
   }
-
-  hasGameStarted = Object.values(players).every((player) => player.hasPressedStart == true);
+  if (Object.keys(players).length > 0) {
+    hasGameStarted = Object.values(players).every((player) => player.hasPressedStart == true);
+  } else {
+    hasGameStarted = false;
+  }
 
   let scoreDisplayerCounter = 70;
   for (player in players) {
@@ -676,6 +678,11 @@ socket.on("connect", () => {
   droppedBombsList = {};
   booms = {};
   droppingPowerups = {};
+});
+
+socket.on("starGameConfirm", (data) => {
+  players[data].hasPressedStart = true;
+  console.log(players[data].hasPressedStart);
 });
 
 socket.on("playerjoined", (data) => {
