@@ -469,7 +469,7 @@ function powerUpSpawner(timestamp, spawnTimeInteval) {
       let ymin = -50;
       let powerupx = Math.floor(Math.random() * (xmax - xmin + 1)) + xmin;
       let powerupy = Math.floor(Math.random() * (ymax - ymin + 1)) + ymin;
-      let powerUpType = Math.random() < 0.5 ? "nuke" : "bullet";
+      let powerUpType = Math.random() < 0.2 ? "nuke" : "bullet";
       let powerUpXSize = powerUpType == "nuke" ? 80 : 60;
       let powerUpYSize = powerUpType == "nuke" ? 60 : 60;
 
@@ -504,9 +504,13 @@ function dropBombSpawner(timestamp, spawnTimeInteval) {
   }
 }
 
+const gameTime = 60000;
+let lastGameTime = 0;
+let gameStartTime;
+let gotGameStartTime = false;
+
 function drawContent(timestamp) {
   let deltaTime = timestamp - lastTime;
-  lastTime = timestamp;
   ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
   ctx.drawImage(spacebgImg, 0, 0, width, height);
   let scoreHolder = 50 + Object.keys(players).length * 30;
@@ -515,9 +519,8 @@ function drawContent(timestamp) {
   ctx.fillStyle = "white";
   ctx.font = "30px Arial";
   ctx.fillText("Scores: ", 20, 40);
-  ctx.fillText(timestamp, width - 150, 80);
-  ctx.fillText(deltaTime, width - 150, 120);
-  ctx.font = "20px Arial";
+  // ctx.fillText(timestamp, width - 150, 80);
+  // ctx.fillText(deltaTime, width - 150, 120);
 
   if (Object.keys(players).length > 0 && hasGameStarted && canSpawnObjects) {
     cautionZoneSpawner(timestamp, 3000);
@@ -525,13 +528,6 @@ function drawContent(timestamp) {
     dropBombSpawner(timestamp, 500);
   }
 
-  if (!hasGameStarted) {
-    ctx.fillStyle = "white";
-    ctx.font = "40px Arial";
-    ctx.fillRect(width / 2 - 300, height / 2 - 40, 520, 50);
-    ctx.fillStyle = "black";
-    ctx.fillText("Press start on your controller", width / 2 - 300, height / 2);
-  }
   if (Object.keys(players).length > 0) {
     hasGameStarted = Object.values(players).every((player) => player.hasPressedStart == true);
   } else {
@@ -540,30 +536,74 @@ function drawContent(timestamp) {
 
   let scoreDisplayerCounter = 70;
   for (player in players) {
+    ctx.font = "20px Arial";
     ctx.fillText(`${players[player].playerName} : ${players[player].score}`, 20, scoreDisplayerCounter);
     scoreDisplayerCounter += 30;
   }
 
+  if (!hasGameStarted || !canSpawnObjects) {
+    ctx.fillStyle = "white";
+    ctx.font = "40px Arial";
+    ctx.fillRect(width / 2 - 300, height / 2 - 40, 520, 50);
+    ctx.fillStyle = "black";
+    ctx.fillText("Press start on your controller", width / 2 - 300, height / 2);
+  } else {
+    if (!gotGameStartTime) {
+      gameStartTime = timestamp;
+      gotGameStartTime = true;
+    }
+
+    let elspsedTime = timestamp - gameStartTime;
+
+    if (elspsedTime >= gameTime) {
+      hasGameStarted = false;
+      canSpawnObjects = false;
+    } else {
+      ctx.font = "100px Arial";
+      ctx.fillStyle = "white";
+      let timeLeft = Math.ceil((gameTime - elspsedTime) / 1000);
+      if (timeLeft % 2 == 0 && timeLeft < 10) {
+        ctx.fillStyle = "red";
+      }
+      ctx.fillText(timeLeft, width / 2 - 100, 100);
+      lastGameTime = timestamp;
+    }
+  }
+
   for (input in remotePlayerInputs) {
     if (players && Object.keys(players).length > 0 && remotePlayerInputs[input] && input && players[input]) {
-      if (remotePlayerInputs[input].heldDown == true) {
-        if (remotePlayerInputs[input].inputValue == "A" && players[input].getPos().x > 0) {
-          players[input].direction = -players[input].moveSpeed;
-        } else if (
-          remotePlayerInputs[input].inputValue == "B" &&
-          players[input].getPos().x < width - players[input].getSize().w
-        ) {
-          players[input].direction = players[input].moveSpeed;
-        } else {
-          players[input].direction = 0;
-        }
+      if (remotePlayerInputs[input]["A"].heldDown == true && players[input].getPos().x > 0) {
+        players[input].direction = -players[input].moveSpeed;
+      } else if (
+        remotePlayerInputs[input]["B"].heldDown == true &&
+        players[input].getPos().x < width - players[input].getSize().w
+      ) {
+        players[input].direction = players[input].moveSpeed;
       } else {
-        if (players[input]) {
-          players[input].direction = 0;
-        }
+        players[input].direction = 0;
       }
     }
   }
+  // for (input in remotePlayerInputs) {
+  //   if (players && Object.keys(players).length > 0 && remotePlayerInputs[input] && input && players[input]) {
+  //     if (remotePlayerInputs[input].heldDown == true) {
+  //       if (remotePlayerInputs[input].inputValue == "A" && players[input].getPos().x > 0) {
+  //         players[input].direction = -players[input].moveSpeed;
+  //       } else if (
+  //         remotePlayerInputs[input].inputValue == "B" &&
+  //         players[input].getPos().x < width - players[input].getSize().w
+  //       ) {
+  //         players[input].direction = players[input].moveSpeed;
+  //       } else {
+  //         players[input].direction = 0;
+  //       }
+  //     } else {
+  //       if (players[input]) {
+  //         players[input].direction = 0;
+  //       }
+  //     }
+  //   }
+  // }
 
   for (exploion in booms) {
     booms[exploion].boom(deltaTime);
@@ -637,10 +677,12 @@ function drawContent(timestamp) {
           booms[newBoomid] = newBoom;
           socket.emit("boomSound", { clientname: bullets[bullet].ownerName });
           socket.emit("hapticResponse", { responseTo: bullets[bullet].ownerName, eventType: "boom" });
-          if (droppedBombsList[bomb].shipType != "normal") {
+          if (droppedBombsList[bomb].shipType != "normal" && hasGameStarted) {
             players[bullets[bullet].ownerName].score += 10;
           } else {
-            players[bullets[bullet].ownerName].score += 20;
+            if (hasGameStarted) {
+              players[bullets[bullet].ownerName].score += 20;
+            }
           }
           socket.emit("playerScore", {
             playerName: bullets[bullet].ownerName,
@@ -662,6 +704,7 @@ function drawContent(timestamp) {
       }
     }
   }
+  lastTime = timestamp;
   requestAnimationFrame(drawContent);
 }
 
@@ -682,7 +725,6 @@ socket.on("connect", () => {
 
 socket.on("starGameConfirm", (data) => {
   players[data].hasPressedStart = true;
-  console.log(players[data].hasPressedStart);
 });
 
 socket.on("playerjoined", (data) => {
@@ -710,12 +752,17 @@ socket.on("playerDied", (data) => {
 });
 
 socket.on("playerInputs", (data) => {
-  // if (Object.keys(remotePlayerInputs).length <= 0) {
-  //   remotePlayerInputs[data.playerName] = {};
-  // } else {
-  //   remotePlayerInputs[data.playerName][data.inputValue] = data;
-  // }
-  remotePlayerInputs[data.playerName] = data;
+  if (Object.keys(remotePlayerInputs).length <= 0) {
+    remotePlayerInputs[data.playerName] = {};
+    remotePlayerInputs[data.playerName]["A"] = { heldDown: false };
+    remotePlayerInputs[data.playerName]["B"] = { heldDown: false };
+  }
+  if (data.inputValue == "A" && data.heldDown) {
+    remotePlayerInputs[data.playerName]["B"].heldDown = false;
+  } else if (data.inputValue == "B" && data.heldDown) {
+    remotePlayerInputs[data.playerName]["A"].heldDown = false;
+  }
+  remotePlayerInputs[data.playerName][data.inputValue] = data;
   if (Object.keys(players).length > 0) {
     if (data.inputValue == "SHOOT") {
       for (let index = 0; index < players[data.playerName].powerupLvl; index++) {
@@ -768,7 +815,13 @@ socket.on("playerInputs", (data) => {
         droppedBombsList[b].destroySelf();
         droppedBombsList[b].shipType == "normal" ? (bombedShipsCounter += 10) : (bombedShipsCounter += 20);
       }
-      players[data.playerName].score += bombedShipsCounter;
+      if (hasGameStarted) {
+        players[data.playerName].score += bombedShipsCounter;
+        socket.emit("playerScore", {
+          playerName: data.playerName,
+          score: players[data.playerName].score,
+        });
+      }
       droppedBombsList = {};
     }
   }

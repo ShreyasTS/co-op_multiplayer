@@ -65,11 +65,13 @@
         background-color: rgb(246, 255, 0);
         border: 2px solid black;
         width: 70%;
+        margin: 10px;
       }
       #singleTapButtonPowerUp {
         background-color: rgb(255, 136, 0);
         border: 2px solid black;
         width: 70%;
+        margin: 10px;
       }
 
       #singleTapButtonA:disabled,
@@ -360,9 +362,9 @@
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
     const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
-    const powerUpsBtn = document.getElementById("powerUpsBtn");
+    const powerUpsBtn = document.getElementById("singleTapButtonPowerUp");
 
-    let totalLives = 10;
+    let totalLives = 3;
 
     function toggleVibration() {
       canUseHapticFeedback = !canUseHapticFeedback;
@@ -416,14 +418,19 @@
 
     function createGame() {
       if (playerName_create.value.length > 0) {
-        socket.emit("assignName", { name: playerName_create.value }, (data) => {
-          gameid.innerHTML = `<span>GAME CODE:<span style="font-weight: bold; border: 2px solid black; padding: 5px; border-radius: 10px" >${data.gameid}</span></span>`;
+        let trimmedName = String(playerName_create.value).trim();
+        socket.emit("assignName", { name: trimmedName }, (data) => {
+          gameid.innerHTML = `<span>GAME CODE:<span style="font-weight: bold; border: 2px solid black; padding: 5px; border-radius: 10px" >${String(
+            data.gameid
+          ).toUpperCase()}</span></span>`;
           controllerContentHolder.style.display = "none";
           gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${data.gameid}</strong>`;
           gamecode = data.gameid;
           playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
           playerInputEmitterName = playerName_create.value;
-          document.getElementById("startGameWithCode").innerHTML = `Press to start game - Game ID : ${data.gameid}`;
+          document.getElementById(
+            "startGameWithCode"
+          ).innerHTML = `Press to start game - Game ID : <span style="color:red">${data.gameid}</span>`;
         });
         fullscreenMode();
       }
@@ -436,7 +443,7 @@
           console.log(response);
           if (response.status == "OK") {
             console.log("YOU'RE IN!");
-            gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${joinGameId.value}</strong>`;
+            gameidStatusbarDisplay.innerHTML = `Game ID: <strong>${String(joinGameId.value).toUpperCase()}</strong>`;
             gamecode = joinGameId.value;
             playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
             playerInputEmitterName = playerName.value;
@@ -549,7 +556,9 @@
           canTakeUserInput = false;
           lives_indicator.innerHTML = "💀";
           singleTapButtonCenter.style.backgroundColor = "grey";
-          singleTapButtonCenter.style.backgroundColor = "2px solid darkgrey";
+          joystick_area.style.backgroundColor = "grey";
+          powerUpsBtn.style.backgroundColor = "grey";
+
           if ("vibrate" in navigator && canUseHapticFeedback) {
             navigator.vibrate([50, 100, 800, 50, 100, 800]);
             statusBar.style.backgroundColor = "red";
@@ -620,19 +629,8 @@
     joystick_area.addEventListener("touchstart", (e) => {
       let joystickRect = joystick_area.getBoundingClientRect();
       joystickTouchedXPos = e.changedTouches[0].screenX;
-      // [...e.changedTouches].forEach((touch) => {
-      //   console.log(touch);
-      //   const dot = document.createElement("div");
-      //   dot.classList.add("joystickDot");
-      //   // let x = parseInt(touch.clientX - joystickRect.left);
-      //   // let y = parseInt(touch.clientY - joystickRect.top);
-      //   console.log(touch.clientX, touch.clientY);
-      //   dot.style.top = `${touch.clientX}px`;
-      //   dot.style.left = `${touch.clientY}px`;
-      //   dot.id = touch.identifier;
-      //   joystick_area.append(dot);
-      // });
     });
+
     let isSwipedLeft = false;
     let isSwipedRight = false;
     joystick_area.addEventListener("touchmove", (e) => {
@@ -650,12 +648,13 @@
         isSwipedRight = true;
       }
     });
+
     joystick_area.addEventListener("touchend", (e) => {
-      if (isSwipedLeft) {
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
-      } else if (isSwipedRight) {
-        socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
-      }
+      // if (isSwipedLeft) {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: false });
+      // } else if (isSwipedRight) {
+      socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "B", heldDown: false });
+      // }
       isSwipedLeft = false;
       isSwipedRight = false;
     });
@@ -669,19 +668,6 @@
         }
       }
     });
-
-    function playShootSound() {
-      let laser_sound = new Audio("/game1/assets/laser.mp3");
-      if (canPlaySound) {
-        laser_sound.play();
-      }
-    }
-    function playBoomSound() {
-      let boom_sound = new Audio("/game1/assets/boom_sound.mp3");
-      if (canPlaySound) {
-        boom_sound.play();
-      }
-    }
 
     singleTapButtonCenter.addEventListener("touchstart", () => {
       if (canTakeUserInput) {
@@ -698,6 +684,19 @@
         }, 200);
       }
     });
+
+    function playShootSound() {
+      let laser_sound = new Audio("/game1/assets/laser.mp3");
+      if (canPlaySound) {
+        laser_sound.play();
+      }
+    }
+    function playBoomSound() {
+      let boom_sound = new Audio("/game1/assets/boom_sound.mp3");
+      if (canPlaySound) {
+        boom_sound.play();
+      }
+    }
 
     // singleTapButtonA.addEventListener("touchmove", () => {
     //   socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "A", heldDown: true });

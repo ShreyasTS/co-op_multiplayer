@@ -28,7 +28,7 @@ app.get("/game", (req, res) => {
   res.sendFile(join(__dirname, "/games/game1/spaceShooter.html"));
 });
 
-const randomId = function (length = 3) {
+const randomId = function (length = 5) {
   return Math.random()
     .toString(36)
     .substring(2, length + 2);
@@ -75,6 +75,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("userInput", (data) => {
+    console.log(data);
     if (gameViewerSocket) {
       io.to(gameViewerSocket.id).emit("playerInputs", data);
       if (data.inputValue == "nuke") {
@@ -85,7 +86,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("boomSound", (data) => {
-    console.log("BOOM:", data);
     players.forEach((player) => {
       if (player.getPlayerName() == data.clientname) {
         io.to(player.playerSocket.id).emit("boomSound");
@@ -94,7 +94,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("hapticResponse", (data) => {
-    console.log("HAPTIC: ", data);
     players.forEach((player) => {
       console.log(player.getPlayerName(), player.playerSocket.id);
       if (player.getPlayerName() == data.responseTo) {
@@ -104,7 +103,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("playerScore", (data) => {
-    console.log("SCORE: ", data);
     players.forEach((player) => {
       if (player.getPlayerName() == data.playerName) {
         io.to(player.playerSocket.id).emit("playerScore", data.score);
@@ -113,7 +111,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("newPowerUpEarned", (data) => {
-    console.log("POWERUP EARNED!", data.powerUpType, data.givenTo);
     players.forEach((player) => {
       if (player.getPlayerName() == data.givenTo) {
         io.to(player.playerSocket.id).emit("newPowerUpEarned", data.powerUpType);
