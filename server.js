@@ -69,6 +69,10 @@ io.on("connection", (socket) => {
     console.log(Array.from(socket.rooms)[1]);
   });
 
+  socket.on("refreshGameScreen", () => {
+    io.to(gameViewerSocket.id).emit("refreshGameScreen");
+  });
+
   socket.on("starGameConfirm", (data) => {
     console.log(data);
     io.to(gameViewerSocket.id).emit("starGameConfirm", data.playerName);

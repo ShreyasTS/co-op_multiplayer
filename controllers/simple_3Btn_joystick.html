@@ -52,6 +52,12 @@
         height: 100%;
         border: 2px solid rgba(256, 256, 256, 0.5);
         border-radius: 40px;
+        box-shadow: 0px 10px black;
+        margin: 10px;
+      }
+      .singleTapBtn:active {
+        transform: translate(0px, 10px);
+        box-shadow: 0px 0px;
       }
 
       #singleTapButtonA {
@@ -216,11 +222,45 @@
           transform: translate(0px, 0px);
         }
       }
+
+      .create_join_textbox {
+        border: 2px solid black;
+        padding: 10px;
+        font-size: medium;
+        border-radius: 10px;
+      }
+
+      .create_joinBtn {
+        border: 2px solid black;
+        border-radius: 10px;
+        box-shadow: 0px 5px black;
+        padding: 10px;
+        padding-left: 20px;
+        padding-right: 20px;
+        background-color: rebeccapurple;
+        color: white;
+      }
+      .create_joinBtn:active {
+        transform: translate(0px, 5px);
+        box-shadow: 0px 0px;
+      }
+
+      .refreshGameScreenBtn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+      }
+      #GameFullScreen {
+        top: 50px;
+      }
     </style>
   </head>
   <body>
     <!--  -->
     <div id="controllerContentHolder">
+      <button class="refreshGameScreenBtn" disabled id="refreshGameScreen" onclick="refreshGameScreen()">
+        Refresh game screen
+      </button>
       <div
         style="
           display: flex;
@@ -239,21 +279,29 @@
       <div
         id="createHolder"
         class="flex_spaceBetween"
-        style="padding: 20px; border: 1px solid black; border-radius: 10px"
+        style="padding: 20px; border: 2px solid black; border-radius: 10px; background-color: teal"
       >
-        <label for="playerName_create">Name:</label>
-        <input type="text" autocomplete="off" name="playerName_create" id="playerName_create" />
-        <span id="gameid"></span><button onclick="createGame()" id="createGame">CREATE</button>
+        <label style="font-size: larger" for="playerName_create">Enter your name</label>
+        <input
+          class="create_join_textbox"
+          type="text"
+          autocomplete="off"
+          name="playerName_create"
+          id="playerName_create"
+        />
+        <span id="gameid"></span><button onclick="createGame()" class="create_joinBtn" id="createGame">CREATE</button>
       </div>
       <div
         id="joinHolder"
         class="flex_spaceBetween"
-        style="margin: 20px; padding: 20px; border: 1px solid black; border-radius: 10px"
+        style="margin: 20px; padding: 20px; border: 1px solid black; border-radius: 10px; background-color: teal"
       >
-        <label for="joinGameId">GameID: </label> <input required autocomplete="off" id="joinGameId" type="text" />
-        <label for="playerName">Name: </label> <input required autocomplete="off" id="playerName" type="text" />
+        <label style="font-size: larger" for="joinGameId">Enter Game ID</label>
+        <input class="create_join_textbox" required autocomplete="off" id="joinGameId" type="text" />
+        <label style="font-size: larger" for="playerName">Enter your name</label>
+        <input class="create_join_textbox" required autocomplete="off" id="playerName" type="text" />
         <p style="color: red" id="errDisplay"></p>
-        <button onclick="joinGame()">JOIN</button>
+        <button class="create_joinBtn" onclick="joinGame()">JOIN</button>
       </div>
     </div>
 
@@ -275,6 +323,7 @@
         <button style="font-size: 20px" id="toggleSoundnBtn" onclick="toggleSound()">🔇</button>
         <span id="connectivityStatus">Disonnected 🔴</span>
       </div>
+
       <button
         id="fullScreenBtn"
         style="position: fixed; top: 50%; right: 50%; width: 100px; padding: 10px"
@@ -358,6 +407,7 @@
     let toggleSoundnBtn = document.getElementById("toggleSoundnBtn");
 
     let joystick_area = document.getElementById("joystick_area");
+    let refreshGameScreenBtn = document.getElementById("refreshGameScreen");
 
     const singleTapButtonA = document.getElementById("singleTapButtonA");
     const singleTapButtonB = document.getElementById("singleTapButtonB");
@@ -407,13 +457,17 @@
       socket.connect();
       document.getElementById("joinBtn").disabled = true;
       document.getElementById("createBtn").disabled = true;
+      refreshGameScreenBtn.disabled = false;
+      playerName_create.focus();
     }
     function showJoin() {
+      playerName.focus();
       createHolder.style.display = "none";
       joinHolder.style.display = "flex";
       socket.connect();
       document.getElementById("joinBtn").disabled = true;
       document.getElementById("createBtn").disabled = true;
+      refreshGameScreenBtn.disabled = false;
     }
 
     function createGame() {
@@ -462,6 +516,13 @@
       }
     }
 
+    function refreshGameScreen() {
+      socket.emit("refreshGameScreen");
+    }
+    function GameFullScreen() {
+      socket.emit("GameFullScreen");
+    }
+
     function starGameConfirm() {
       document.getElementById("buttonHolder").removeChild(document.getElementById("overlayStartBtn"));
       let name = playerName_create.value.length > 0 ? playerName_create.value : playerName.value;
@@ -483,6 +544,7 @@
 
     //
     function fullscreenMode() {
+      refreshGameScreenBtn.style.display = "none";
       if (!document.fullscreenElement) {
         buttonHolder.style.display = "flex";
         statusBar.style.display = "flex";
