@@ -504,10 +504,24 @@ function dropBombSpawner(timestamp, spawnTimeInteval) {
   }
 }
 
-const gameTime = 60000;
+function playSound(trackName) {
+  let tracks = {
+    timerBeep: "/game1/assets/gameTimerBeep.mp3",
+    bgm1: "/game1/assets/bgm1.mp3",
+    bgm2: "/game1/assets/bgm2.mp3",
+  };
+  console.log("PLAYING: ", tracks[trackName], trackName);
+  let audio = new Audio(tracks[trackName]);
+  audio.play();
+}
+
+const gameTime = 10000;
 let lastGameTime = 0;
 let gameStartTime;
 let gotGameStartTime = false;
+
+let bgmCoices = ["bgm1", "bgm2"];
+let bgmSelectedChoice = Math.floor(Math.random() * bgmCoices.length);
 
 function drawContent(timestamp) {
   let deltaTime = timestamp - lastTime;
@@ -549,6 +563,7 @@ function drawContent(timestamp) {
     ctx.fillText("Press start on your controller", width / 2 - 300, height / 2);
   } else {
     if (!gotGameStartTime) {
+      playSound(bgmCoices[bgmSelectedChoice]);
       gameStartTime = timestamp;
       gotGameStartTime = true;
     }
@@ -559,13 +574,26 @@ function drawContent(timestamp) {
       hasGameStarted = false;
       canSpawnObjects = false;
     } else {
+      ctx.fillStyle = "white";
+      ctx.fillRect(width / 2 - 100, 18, 115, 108);
+      ctx.fillStyle = "black";
+      ctx.fillRect(width / 2 - 98, 20, 110, 104);
       ctx.font = "100px Arial";
       ctx.fillStyle = "white";
       let timeLeft = Math.ceil((gameTime - elspsedTime) / 1000);
       if (timeLeft % 2 == 0 && timeLeft < 10) {
         ctx.fillStyle = "red";
       }
-      ctx.fillText(timeLeft, width / 2 - 100, 100);
+      // if (timeLeft == 3 || timeLeft == 2 || timeLeft == 1) {
+      //   playSound("timerBeep");
+      // }
+      let refactoredTimeLeft = "";
+      if (timeLeft < 10) {
+        refactoredTimeLeft = "0" + timeLeft;
+      } else {
+        refactoredTimeLeft = timeLeft;
+      }
+      ctx.fillText(refactoredTimeLeft, width / 2 - 100, 100);
       lastGameTime = timestamp;
     }
   }
