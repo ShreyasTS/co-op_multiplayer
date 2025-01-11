@@ -12,6 +12,7 @@ let playerSize = 70;
 
 let hasGameStarted = false;
 let canSpawnObjects = true;
+let canPlaySound = true;
 
 let spaceshipImg = document.getElementById("spaceshipImg");
 let spacebgImg = document.getElementById("spacebgImg");
@@ -21,6 +22,9 @@ let nukeImg = document.getElementById("nukeImg");
 let boomImg = document.getElementById("boomImg");
 let cautionImg = document.getElementById("cautionImg");
 let missileImg = document.getElementById("missileImg");
+let soundToggleBtn = document.getElementById("soundToggleBtn");
+let gameCodeDisplay = document.getElementById("gameCodeDisplay");
+let gameHolder = document.getElementById("gameHolder");
 
 let width;
 let height;
@@ -43,14 +47,14 @@ if (Android || ios) {
 }
 
 document.addEventListener("keypress", (e) => {
-  console.log(e);
   if (e.key == "f") fullscreenMode();
-  if (e.key == "d") window.location.reload();
+  if (e.key == "m") toggleSound();
+  if (e.key == "r") window.location.reload();
 });
 
 function fullscreenMode() {
   if (!document.fullscreenElement) {
-    gameCanvas.requestFullscreen();
+    gameHolder.requestFullscreen();
     setTimeout(() => {
       ctx.canvas.width = window.innerWidth;
       ctx.canvas.height = window.innerHeight;
@@ -62,7 +66,7 @@ function fullscreenMode() {
 
     screen.orientation.lock("landscape-primary");
   } else {
-    gameCanvas.exitFullscreen();
+    gameHolder.exitFullscreen();
     screen.orientation.lock("portrait-primary");
     setTimeout(() => {
       ctx.canvas.width = window.innerWidth;
@@ -509,9 +513,10 @@ function playSound(trackName) {
     bgm1: "/game1/assets/bgm1.mp3",
     bgm2: "/game1/assets/bgm2.mp3",
   };
-  console.log("PLAYING: ", tracks[trackName], trackName);
-  let audio = new Audio(tracks[trackName]);
-  audio.play();
+  if (canPlaySound) {
+    let audio = new Audio(tracks[trackName]);
+    audio.play();
+  }
 }
 
 const gameTime = 60000;
@@ -734,7 +739,17 @@ requestAnimationFrame(drawContent);
 
 document.addEventListener("DOMContentLoaded", () => {
   socket.connect();
+  canPlaySound = window.localStorage.getItem("canPlaySound") == "true" ? true : false;
+  canPlaySound ? (soundToggleBtn.innerText = "🔊") : (soundToggleBtn.innerText = "🔇");
 });
+
+function toggleSound() {
+  canPlaySound = !canPlaySound;
+  canPlaySound ? (soundToggleBtn.innerText = "🔊") : (soundToggleBtn.innerText = "🔇");
+  canPlaySound
+    ? window.localStorage.setItem("canPlaySound", "true")
+    : window.localStorage.setItem("canPlaySound", "false");
+}
 
 socket.on("connect", () => {
   socket.emit("gameViewerConnected");
@@ -777,8 +792,13 @@ socket.on("playerDied", (data) => {
   }
 });
 
+socket.on("gameCode", (data) => {
+  gameCodeDisplay.innerText = String(data).toUpperCase();
+});
+
 socket.on("playerInputs", (data) => {
-  if (Object.keys(remotePlayerInputs).length <= 0) {
+  console.log(">>>", data);
+  if (Object.keys(remotePlayerInputs).length <= 0 || remotePlayerInputs[data.playerName] == undefined) {
     remotePlayerInputs[data.playerName] = {};
     remotePlayerInputs[data.playerName]["A"] = { heldDown: false };
     remotePlayerInputs[data.playerName]["B"] = { heldDown: false };

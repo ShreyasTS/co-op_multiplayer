@@ -52,21 +52,21 @@ io.on("connection", (socket) => {
     lobbies.push(newLobby);
     socket.join(lobbyid);
     gameViewerSocket.join(lobbyid);
+    io.to(gameViewerSocket.id).emit("gameCode", lobbyid);
     io.to(gameViewerSocket.id).emit("playerjoined", data.name);
     cb({ gameid: lobbyid });
   });
 
   socket.on("joinLobby", (data, cb) => {
-    console.log(data);
     let newPlayer = new User(data.playername, socket);
     players.push(newPlayer);
     lobbies.push(data.playername);
     socket.join(String(data.gameid).toUpperCase());
     // socket.to(data.gameid).emit("playerjoined", `New Player joined! ${data.playername}`);
     gameViewerSocket.join(data.gameid);
+    io.to(gameViewerSocket.id).emit("gameCode", data.gameid);
     cb({ status: "OK" });
     io.to(gameViewerSocket.id).emit("playerjoined", data.playername);
-    console.log(Array.from(socket.rooms)[1]);
   });
 
   socket.on("refreshGameScreen", () => {
@@ -74,7 +74,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("starGameConfirm", (data) => {
-    console.log(data);
     io.to(gameViewerSocket.id).emit("starGameConfirm", data.playerName);
   });
 
@@ -99,7 +98,6 @@ io.on("connection", (socket) => {
 
   socket.on("hapticResponse", (data) => {
     players.forEach((player) => {
-      console.log(player.getPlayerName(), player.playerSocket.id);
       if (player.getPlayerName() == data.responseTo) {
         io.to(player.playerSocket.id).emit("hapticResponse", data.eventType);
       }

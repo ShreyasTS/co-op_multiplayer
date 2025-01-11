@@ -47,19 +47,69 @@
       #gameCanvas {
         border: 1px solid black;
       }
-      #full_screenBtn {
+      #full_screenBtn,
+      #RefreshBtn {
+        border: 2px solid white;
+        font-size: x-large;
+        background-color: transparent;
+        color: white;
+      }
+
+      #full_screenBtn,
+      #soundToggleBtn,
+      #RefreshBtn {
         position: fixed;
         top: 10px;
         right: 10px;
         padding: 5px;
+        transition: all 0.3s;
+      }
+
+      #full_screenBtn {
+        top: 60px;
+      }
+      #soundToggleBtn {
+        top: 110px;
+        background-color: transparent;
+        border-radius: 50%;
+        border: 2px solid white;
+        font-size: xx-large;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #soundToggleBtn:hover,
+      #full_screenBtn:hover,
+      #RefreshBtn:hover {
+        /* background-color: rgba(0, 0, 0, 0.312); */
+        background-color: black;
+      }
+      #gameCodeHolder {
+        padding: 5px;
+        border: 2px solid white;
+        color: white;
+        font-size: x-large;
+        position: fixed;
+        top: 15px;
+        left: 220px;
+        font-weight: bold;
+      }
+      #gameCodeHolder span {
+        color: black;
+        background-color: white;
       }
     </style>
   </head>
   <body>
     <div>
-      <button id="full_screenBtn" onclick="fullscreenMode()">Full screen</button>
-      <!-- <canvas id="gameCanvas" width="800" height="600"></canvas> -->
-      <canvas id="gameCanvas" width="1920" height="1080"></canvas>
+      <div id="gameHolder">
+        <p id="gameCodeHolder">Game code: <span id="gameCodeDisplay"></span></p>
+        <button id="RefreshBtn" onclick="window.location.reload()">Reload [ R ]</button>
+        <button id="full_screenBtn" onclick="fullscreenMode()">Full screen [ F ]</button>
+        <button id="soundToggleBtn" onclick="toggleSound()">🔊 [ M ]</button>
+        <!-- <canvas id="gameCanvas" width="800" height="600"></canvas> -->
+        <canvas id="gameCanvas" width="1920" height="1080"></canvas>
+      </div>
       <img id="spaceshipImg" style="display: none" src="/game1/assets/spaceship.png" alt="" />
       <img id="spacebgImg" style="display: none" src="/game1/assets/spacebg.jpg" alt="" />
       <img id="enemyshipImg" style="display: none" src="/game1/assets/enemyship.png" alt="" />

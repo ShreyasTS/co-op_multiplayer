@@ -370,6 +370,7 @@
           playerNameStatusbar.innerHTML = `Name: ${playerName_create.value}`;
           playerInputEmitterName = playerName_create.value;
           openController();
+          socket.emit("starGameConfirm", { playerName: playerName_create.value });
 
           setInterval(() => {
             // socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: true });
@@ -418,6 +419,7 @@
             playerNameStatusbar.innerHTML = `Name: ${playerName.value}`;
             playerInputEmitterName = playerName.value;
             openController();
+            socket.emit("starGameConfirm", { playerName: playerName.value });
 
             setInterval(() => {
               // socket.emit("userInput", { playerName: playerInputEmitterName, inputValue: "nuke", heldDown: true });
