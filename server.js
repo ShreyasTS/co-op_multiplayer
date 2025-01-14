@@ -78,7 +78,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("userInput", (data) => {
-    console.log(data);
     if (gameViewerSocket) {
       io.to(gameViewerSocket.id).emit("playerInputs", data);
       if (data.inputValue == "nuke") {
@@ -94,6 +93,10 @@ io.on("connection", (socket) => {
         io.to(player.playerSocket.id).emit("boomSound");
       }
     });
+  });
+
+  socket.on("difficultyType", (data) => {
+    io.to(Array.from(socket.rooms)[1]).emit("difficultyType", data);
   });
 
   socket.on("hapticResponse", (data) => {

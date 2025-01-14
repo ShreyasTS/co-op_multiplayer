@@ -57,19 +57,16 @@
 
       #full_screenBtn,
       #soundToggleBtn,
-      #RefreshBtn {
-        position: fixed;
-        top: 10px;
-        right: 10px;
+      #RefreshBtn,
+      #gameModeBtn {
+        /* position: fixed; */
         padding: 5px;
         transition: all 0.3s;
       }
 
-      #full_screenBtn {
-        top: 60px;
-      }
-      #soundToggleBtn {
-        top: 110px;
+      #soundToggleBtn,
+      #gameModeBtn {
+        width: fit-content;
         background-color: transparent;
         border-radius: 50%;
         border: 2px solid white;
@@ -78,9 +75,11 @@
         justify-content: center;
         align-items: center;
       }
+
       #soundToggleBtn:hover,
       #full_screenBtn:hover,
-      #RefreshBtn:hover {
+      #RefreshBtn:hover,
+      #gameModeBtn {
         /* background-color: rgba(0, 0, 0, 0.312); */
         background-color: black;
       }
@@ -97,6 +96,26 @@
       #gameCodeHolder span {
         color: black;
         background-color: white;
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(2px);
+      }
+      #menuHolder {
+        padding: 10px;
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(2px);
+        border: 2px solid white;
+        display: flex;
+        gap: 10px;
+        flex-direction: column;
+        align-items: end;
+        position: fixed;
+        top: 0;
+        right: 0;
+      }
+      #toggleSoundText,
+      #toggleDifficultyText {
+        color: white;
+        font-size: x-large;
       }
     </style>
   </head>
@@ -104,9 +123,17 @@
     <div>
       <div id="gameHolder">
         <p id="gameCodeHolder">Game code: <span id="gameCodeDisplay"></span></p>
-        <button id="RefreshBtn" onclick="window.location.reload()">Reload [ R ]</button>
-        <button id="full_screenBtn" onclick="fullscreenMode()">Full screen [ F ]</button>
-        <button id="soundToggleBtn" onclick="toggleSound()">🔊 [ M ]</button>
+        <div id="menuHolder">
+          <button id="RefreshBtn" onclick="window.location.reload()">Reload [ R ]</button>
+          <button id="full_screenBtn" onclick="fullscreenMode()">Full screen [ F ]</button>
+          <div style="display: flex; flex-direction: row; gap: 5px">
+            <button id="soundToggleBtn" onclick="toggleSound()">🔊 [ M ]</button>
+            <button id="gameModeBtn" onclick="toggleDifficulty()">🙂</button>
+          </div>
+          <p id="toggleSoundText">[ M ] Toggle Sound</p>
+          <p id="toggleDifficultyText">[ D ] Toggle Difficulty</p>
+        </div>
+
         <!-- <canvas id="gameCanvas" width="800" height="600"></canvas> -->
         <canvas id="gameCanvas" width="1920" height="1080"></canvas>
       </div>

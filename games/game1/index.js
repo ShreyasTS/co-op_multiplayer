@@ -14,6 +14,8 @@ let hasGameStarted = false;
 let canSpawnObjects = true;
 let canPlaySound = true;
 
+let bgmSoundAudio;
+
 let spaceshipImg = document.getElementById("spaceshipImg");
 let spacebgImg = document.getElementById("spacebgImg");
 let enemyshipImg = document.getElementById("enemyshipImg");
@@ -25,6 +27,7 @@ let missileImg = document.getElementById("missileImg");
 let soundToggleBtn = document.getElementById("soundToggleBtn");
 let gameCodeDisplay = document.getElementById("gameCodeDisplay");
 let gameHolder = document.getElementById("gameHolder");
+let gameModeBtn = document.getElementById("gameModeBtn");
 
 let width;
 let height;
@@ -34,6 +37,8 @@ let ctx = gameCanvas.getContext("2d");
 let userAgent = navigator.userAgent.toLowerCase();
 let Android = userAgent.indexOf("android") > -1;
 let ios = userAgent.indexOf("ios") > -1;
+
+let easyDifficulty = true;
 
 console.log(userAgent);
 ctx.canvas.width = window.innerWidth;
@@ -50,6 +55,7 @@ document.addEventListener("keypress", (e) => {
   if (e.key == "f") fullscreenMode();
   if (e.key == "m") toggleSound();
   if (e.key == "r") window.location.reload();
+  if (e.key == "d") toggleDifficulty();
 });
 
 function fullscreenMode() {
@@ -516,6 +522,7 @@ function playSound(trackName) {
   if (canPlaySound) {
     let audio = new Audio(tracks[trackName]);
     audio.play();
+    return audio;
   }
 }
 
@@ -523,6 +530,10 @@ const gameTime = 60000;
 let lastGameTime = 0;
 let gameStartTime;
 let gotGameStartTime = false;
+
+let cautionZoneSpawnRate = 3000; // Every 3 seconds
+let powerUpSpawnRate = 3000; // Every 3 seconds
+let dropBombSpawnRate = 500; // Every half seconds
 
 let bgmCoices = ["bgm1", "bgm2"];
 let bgmSelectedChoice = Math.floor(Math.random() * bgmCoices.length);
@@ -541,9 +552,9 @@ function drawContent(timestamp) {
   // ctx.fillText(deltaTime, width - 150, 120);
 
   if (Object.keys(players).length > 0 && hasGameStarted && canSpawnObjects) {
-    cautionZoneSpawner(timestamp, 3000);
-    powerUpSpawner(timestamp, 3000);
-    dropBombSpawner(timestamp, 500);
+    cautionZoneSpawner(timestamp, cautionZoneSpawnRate);
+    powerUpSpawner(timestamp, powerUpSpawnRate);
+    dropBombSpawner(timestamp, dropBombSpawnRate);
   }
 
   if (Object.keys(players).length > 0) {
@@ -702,9 +713,10 @@ function drawContent(timestamp) {
     ctx.fillText("Press start on your controller", width / 2 - 300, height / 2);
   } else {
     if (!gotGameStartTime) {
-      playSound(bgmCoices[bgmSelectedChoice]);
+      bgmSoundAudio = playSound(bgmCoices[bgmSelectedChoice]);
       gameStartTime = timestamp;
       gotGameStartTime = true;
+      socket.emit("difficultyType", easyDifficulty);
     }
 
     let elspsedTime = timestamp - gameStartTime;
@@ -749,6 +761,17 @@ function toggleSound() {
   canPlaySound
     ? window.localStorage.setItem("canPlaySound", "true")
     : window.localStorage.setItem("canPlaySound", "false");
+  if (!canPlaySound) {
+    bgmSoundAudio.pause();
+  } else {
+    bgmSoundAudio.play();
+  }
+}
+
+function toggleDifficulty() {
+  easyDifficulty = !easyDifficulty;
+  easyDifficulty ? (gameModeBtn.innerText = "🙂") : (gameModeBtn.innerText = "💀");
+  socket.emit("difficultyType", easyDifficulty);
 }
 
 socket.on("connect", () => {
@@ -776,6 +799,7 @@ socket.on("playerjoined", (data) => {
   console.log(`rgb(${r},${g}, ${b})`);
   let newPlayer = new Player(randomXStart, height - 200, playerSize, playerSize, ctx, `rgb(${r},${g}, ${b})`, data);
   players[data] = newPlayer;
+  socket.emit("difficultyType", easyDifficulty);
 });
 
 socket.on("confirm", (data) => {

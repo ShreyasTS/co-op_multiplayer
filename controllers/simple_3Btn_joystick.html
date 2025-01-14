@@ -256,6 +256,11 @@
       #GameFullScreen {
         top: 50px;
       }
+      #difficultyTypeViewer {
+        padding: 2px;
+        border: 2px solid black;
+        border-radius: 50%;
+      }
     </style>
   </head>
   <body>
@@ -317,11 +322,12 @@
         </div>
         <!-- DEBUG BTN - TO BE REMOVED POST DEV -->
         <button onclick="window.location.reload()">🔄️</button>
+        <p id="difficultyTypeViewer">🙂</p>
         <div style="padding: 2px; border: 2px solid black; border-radius: 10px">
           <div>Life: <span id="lives_indicator">❤️❤️❤️</span></div>
           <div>Score: <span id="score_indicator">0</span></div>
         </div>
-        <span id="notificationsStatusbar">:Notifications:</span>
+        <span id="notificationsStatusbar"></span>
         <button style="font-size: 20px" id="toggleVibrationBtn" onclick="toggleVibration()">📳</button>
         <button style="font-size: 20px" id="toggleSoundnBtn" onclick="toggleSound()">🔇</button>
         <span id="connectivityStatus">Disonnected 🔴</span>
@@ -410,6 +416,7 @@
     let lives_indicator = document.getElementById("lives_indicator");
     let toggleVibrationBtn = document.getElementById("toggleVibrationBtn");
     let toggleSoundnBtn = document.getElementById("toggleSoundnBtn");
+    let difficultyTypeViewer = document.getElementById("difficultyTypeViewer");
 
     let joystick_area = document.getElementById("joystick_area");
     let refreshGameScreenBtn = document.getElementById("refreshGameScreen");
@@ -418,8 +425,9 @@
     const singleTapButtonB = document.getElementById("singleTapButtonB");
     const singleTapButtonCenter = document.getElementById("singleTapButtonCenter");
     const powerUpsBtn = document.getElementById("singleTapButtonPowerUp");
+    let easyDifficulty = true;
 
-    let totalLives = 10;
+    let totalLives = 3;
 
     function toggleVibration() {
       canUseHapticFeedback = !canUseHapticFeedback;
@@ -657,17 +665,51 @@
       }
     });
 
-    socket.on("newPowerUpEarned", (data) => {
-      console.log(data);
+    socket.on("difficultyType", (data) => {
+      data ? (easyDifficulty = true) : (easyDifficulty = false);
+      easyDifficulty ? (difficultyTypeViewer.innerText = "🙂") : (difficultyTypeViewer.innerText = "💀");
+      easyDifficulty ? (totalLives = 3) : (totalLives = 5);
+    });
 
+    socket.on("newPowerUpEarned", (data) => {
       if (data == "nuke") {
         powerUpsBtn.innerText = "🚀";
       }
     });
 
-    socket.on("playerScore", (data) => {
-      console.log(data);
+    function playBeepSound() {
+      let beep = new Audio("/game1/assets/gameTimerBeep.mp3");
+      beep.play();
+    }
 
+    let killPlayerTimer;
+    let killPlayerFlasher;
+    let startFlasher;
+    socket.on("playerScore", (data) => {
+      if (!easyDifficulty) {
+        let flasher = false;
+        if (killPlayerTimer) clearTimeout(killPlayerTimer);
+        if (killPlayerFlasher) clearInterval(killPlayerFlasher);
+        if (startFlasher) clearTimeout(startFlasher);
+        killPlayerTimer = setTimeout(() => {
+          socket.emit("playerDied");
+          clearTimeout(killPlayerTimer);
+          clearInterval(killPlayerFlasher);
+          clearTimeout(startFlasher);
+          statusBar.style.backgroundColor = "red";
+          if ("vibrate" in navigator && canUseHapticFeedback) {
+            navigator.vibrate(800);
+          }
+        }, 4000);
+        startFlasher = setTimeout(() => {
+          killPlayerFlasher = setInterval(() => {
+            flasher ? (statusBar.style.backgroundColor = "red") : (statusBar.style.backgroundColor = "white");
+            if ("vibrate" in navigator && canUseHapticFeedback) navigator.vibrate(50);
+            if (canPlaySound) playBeepSound();
+            flasher = !flasher;
+          }, 300);
+        }, 2000);
+      }
       score_indicator.innerHTML = data;
     });
 
