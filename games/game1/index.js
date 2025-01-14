@@ -559,6 +559,7 @@ function drawContent(timestamp) {
 
   if (Object.keys(players).length > 0) {
     hasGameStarted = Object.values(players).every((player) => player.hasPressedStart == true);
+    canSpawnObjects = hasGameStarted;
   } else {
     hasGameStarted = false;
   }
@@ -821,7 +822,6 @@ socket.on("gameCode", (data) => {
 });
 
 socket.on("playerInputs", (data) => {
-  console.log(">>>", data);
   if (Object.keys(remotePlayerInputs).length <= 0 || remotePlayerInputs[data.playerName] == undefined) {
     remotePlayerInputs[data.playerName] = {};
     remotePlayerInputs[data.playerName]["A"] = { heldDown: false };
