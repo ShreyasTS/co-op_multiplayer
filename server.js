@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
 app.get("/userTest", (req, res) => {
   res.sendFile(join(__dirname, "/controllers/autoBotTest.html"));
 });
-app.get("/game", (req, res) => {
+app.get("/space", (req, res) => {
   res.sendFile(join(__dirname, "/games/game1/spaceShooter.html"));
 });
 
