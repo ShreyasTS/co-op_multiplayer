@@ -360,17 +360,21 @@ class Player extends Entity {
       }
 
       if (Math.floor(timestamp / 200) % 2 == 0) {
-        this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
         this.ctx.fillStyle = this.color;
+        this.ctx.fillRect(this.getPos().x, this.getPos().y + 70, this.getSize().w, 30);
+        this.ctx.fillStyle = "black";
         this.ctx.font = "30px Arial";
-        this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 10);
+        this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 20);
+        this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
       }
     } else {
-      this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
       this.prevTimestamp = timestamp;
       this.ctx.fillStyle = this.color;
+      this.ctx.fillRect(this.getPos().x, this.getPos().y + 70, this.getSize().w, 30);
+      this.ctx.fillStyle = "black";
       this.ctx.font = "30px Arial";
-      this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 10);
+      this.ctx.fillText(this.playerName, this.getPos().x, this.getPos().y + this.getSize().h + 20);
+      this.ctx.drawImage(spaceshipImg, this.getPos().x, this.getPos().y, this.getSize().w, this.getSize().h);
     }
   }
 
@@ -385,8 +389,6 @@ class Player extends Entity {
     }, 3000);
   }
 }
-
-let b = new Player(20, 20, 100, 100, ctx, "brown", "hehe");
 
 let lastTime = 0;
 let remotePlayerInputs = {};
