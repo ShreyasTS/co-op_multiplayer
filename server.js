@@ -4,6 +4,10 @@ const { join } = require("node:path");
 const { Server } = require("socket.io");
 const User = require("./services/User");
 const Lobby = require("./services/Lobby");
+const fs = require("fs");
+
+const appName = "splitMultiplayer";
+let appPort = "";
 
 const app = express();
 const server = createServer(app);
@@ -36,6 +40,7 @@ const randomId = function (length = 5) {
 
 io.on("connection", (socket) => {
   console.log("New user connected: ", socket.id);
+  socket.emit("localip", getLocalIP());
 
   socket.on("gameViewerConnected", () => {
     gameViewerSocket = socket;
@@ -152,15 +157,31 @@ viewerio.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log("server running at http://localhost:3000");
-  // dns.lookup(os.hostname(), options, (err, addr) => {
-  //   if (err) {
-  //     console.error(err);
-  //   } else {
-  //     console.log(`Game controller: ${addr}:3000`);
-  //     console.log(`Game Viewer: ${addr}:3000/game`);
-  //     console.log("-------------------------");
-  //   }
-  // });
+const os = require("os");
+
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  let ips = ["127.0.0.1"];
+  for (let interfaceName in interfaces) {
+    for (let iface of interfaces[interfaceName]) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        ips.push(iface.address);
+      }
+    }
+  }
+  let localip;
+  ips.forEach((ip) => {
+    if (String(ip).includes("192")) {
+      console.log(ip);
+      localip = ip;
+    }
+  });
+  return localip;
+}
+
+fs.readFile("../../app_ports.json", "utf8", (err, data) => {
+  appPort = JSON.parse(data)[appName];
+  server.listen(3000, () => {
+    console.log(`[${appName}] - server running at http://localhost:${appPort}`);
+  });
 });

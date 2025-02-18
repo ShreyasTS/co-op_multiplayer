@@ -28,6 +28,7 @@ let soundToggleBtn = document.getElementById("soundToggleBtn");
 let gameCodeDisplay = document.getElementById("gameCodeDisplay");
 let gameHolder = document.getElementById("gameHolder");
 let gameModeBtn = document.getElementById("gameModeBtn");
+let connInstruction = document.getElementById("connInstruction");
 
 let width;
 let height;
@@ -557,6 +558,9 @@ function drawContent(timestamp) {
     cautionZoneSpawner(timestamp, cautionZoneSpawnRate);
     powerUpSpawner(timestamp, powerUpSpawnRate);
     dropBombSpawner(timestamp, dropBombSpawnRate);
+    connInstruction.style.display = "none";
+  } else {
+    connInstruction.style.display = "block";
   }
 
   if (Object.keys(players).length > 0) {
@@ -784,6 +788,10 @@ socket.on("connect", () => {
   droppedBombsList = {};
   booms = {};
   droppingPowerups = {};
+});
+
+socket.on("localip", (data) => {
+  connInstruction.innerHTML = `Open <span class="ip">${data}</span> on your mobile device to open controller 🎮`;
 });
 
 socket.on("refreshGameScreen", () => {
